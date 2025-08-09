@@ -1,0 +1,151 @@
+﻿@page "/FreeProductOffer/{ProductId:int}"
+
+@using System.ComponentModel.DataAnnotations
+@rendermode @(new InteractiveServerRenderMode(prerender: false))
+@inject DialogService DialogService
+
+<Message @ref="notificationComponent" />
+
+<h3>Free Product Offer</h3>
+@if (FreeProductOffer != null)
+{
+    <div class="card dataForm ">
+        <EditForm Model="@FreeProductOffer" OnValidSubmit="HandleSubmit">
+            <div class="card dataForm">
+                <div class="row m-3">
+                    <div class="col-md-4 mb-3">
+                        <label class="Asterisk">Product Name</label>
+                        <InputText @bind-Value="ProductName" class="form-control" disabled />
+                    </div>
+
+                    <div class="col-md-4 mb-3">
+                        <label class="Asterisk">Gift Type</label>
+                        <InputSelect @bind-Value="FreeProductOffer.GiftType" class="form-control">
+                            @foreach (GiftType type in Enum.GetValues(typeof(GiftType)))
+                            {
+                                <option value="@type">@GetDisplayName(type)</option>
+                            }
+                        </InputSelect>
+                    </div>
+
+                    @if (FreeProductOffer.GiftType == GiftType.DifferentProduct)
+                    {
+                        <div class="col-md-4 mb-3">
+                            <label class="Asterisk">Select Free Product</label>
+                            <InputSelect @bind-Value="FreeProductOffer.FreeProductId" class="form-control">
+                                <option value="">-- Select Product --</option>
+                                @foreach (var product in Products)
+                                {
+                                    <option value="@product.Id">@product.Name</option>
+                                }
+                            </InputSelect>
+                        </div>
+                    }
+
+                    @if (FreeProductOffer.GiftType == GiftType.CustomItem)
+                    {
+                        <div class="col-md-4 mb-3">
+                            <label class="Asterisk">Custom Gift Item</label>
+                            <InputText @bind-Value="FreeProductOffer.CustomItem" class="form-control" />
+                        </div>
+                    }
+                </div>
+
+                <div class="row m-3">
+                    <div class="col-md-4 mb-3">
+                        <label class="Asterisk">Buy Quantity</label>
+                        <InputNumber @bind-Value="FreeProductOffer.BuyQuantity" class="form-control" />
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label class="Asterisk">Free Quantity</label>
+                        <InputNumber @bind-Value="FreeProductOffer.FreeQuantity" class="form-control" />
+                    </div>
+                    <div class="col-md-4 mb-3 d-flex align-items-center Asterisk">
+                        <RadzenCheckBox @bind-Value="FreeProductOffer.IsActive" Name="IsActive" />
+                        <RadzenLabel Text="Active" Component="IsActive" class="ms-2" />
+                    </div>
+                </div>
+
+                <div class="col-md-12">
+                    <RadzenButton Text="Save" ButtonStyle="ButtonStyle.Primary" Type="submit" Class="m-2" />
+                    <RadzenButton Text="Cancel" ButtonStyle="ButtonStyle.Secondary" Click="CloseModal" Class="m-2" />
+                </div>
+            </div>
+        </EditForm>
+    </div>
+}
+else
+{
+    <p>Loading...</p>
+}
+
+@code {
+    [Parameter]
+    public int ProductId { get; set; }
+
+    [Inject]
+    private IProduct m_Product { get; set; }
+
+    [Inject]
+    private ILookup m_Lookup { get; set; }
+
+    [Inject]
+    private NavigationManager _navigationManager { get; set; }
+
+    public IEnumerable<Lov> Products { get; set; } = new List<Lov>();
+
+    public string ProductName { get; set; }
+
+    public FreeProductOffer FreeProductOffer { get; set; }
+    private Message notificationComponent;
+
+    protected override async Task OnInitializedAsync()
+    {
+        ProductName = m_Product.GetProduct(ProductId).Name;
+        Products = await m_Lookup.GetAllProductList();
+
+        ////Products = Products.Where(c => !c.IsDeleted);
+
+        FreeProductOffer = m_Product.GetFreeProductOffer(ProductId);
+
+        if (FreeProductOffer is null)
+        {
+            FreeProductOffer = new FreeProductOffer()
+                {
+                    ProductId = ProductId,
+                };
+        }
+
+    }
+
+    private async Task HandleSubmit()
+    {
+
+        if (FreeProductOffer.Id > 0)
+        {
+            m_Product.UpdateFreeProductOffer(FreeProductOffer);
+            notificationComponent.Show("Updated Summary", "Free Product Offer has been Updated successfully", NotificationSeverity.Warning);
+        }
+        else
+        {
+            m_Product.CreateFreeProductOffer(FreeProductOffer);
+            notificationComponent.Show("Added Summary", "Free Product Offer has been Added successfully", NotificationSeverity.Success);
+        }
+
+        _navigationManager.NavigateTo($"/Products", true);
+    }
+
+    private string GetDisplayName(GiftType giftType)
+    {
+        var field = giftType.GetType().GetField(giftType.ToString());
+        var attr = field?.GetCustomAttributes(typeof(DisplayAttribute), false)
+                        .Cast<DisplayAttribute>()
+                        .FirstOrDefault();
+        return attr?.Name ?? giftType.ToString();
+    }
+
+    private void CloseModal()
+    {
+        _navigationManager.NavigateTo($"/Products", true);
+    }
+}

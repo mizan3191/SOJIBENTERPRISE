@@ -1,0 +1,278 @@
+﻿@page "/DamageProductDuePaymentSummary/{SupplierId:int}"
+
+@rendermode @(new InteractiveServerRenderMode(prerender: false))
+
+@inject DialogService DialogService
+<Message @ref="notificationComponent" />
+<h3>Damage Product Payment Due Summary</h3>
+
+<div class="card-body pt-3">
+
+    <div class="d-flex align-items-center mb-3" style="width: 100%;">
+        <!-- Back Button -->
+        <RadzenButton Text="Back" ButtonStyle="ButtonStyle.Secondary" Click="Cancel" Class="m-2" />
+
+        <!-- Search Box -->
+        <div class="d-flex align-items-center border rounded me-3" style="width: fit-content;">
+            <!-- Search Icon -->
+            <span class="ps-2" style="font-size: 1.2rem; color: #6c757d;">
+                <i class="fas fa-search"></i>
+            </span>
+
+            <!-- Search Text Box -->
+            <RadzenTextBox @bind-Value="@search" TValue="string" Placeholder="Search..." @oninput="OnSearch"
+                           Style="border: none; box-shadow: none; padding-left: 0.5rem;" />
+        </div>
+
+        <!-- Export Button -->
+        <div class="d-flex align-items-center border rounded me-3" style="width: fit-content;">
+            <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="1rem;" Wrap="FlexWrap.Wrap" Style="padding-left: 0.10rem;">
+                <RadzenButton Text="Export To PDF" Icon="picture_as_pdf" Click="@(args => ExportToPdf())" />
+            </RadzenStack>
+        </div>
+
+        <!-- Spacer to push dates to the right -->
+        <div class="flex-grow-1"></div>
+
+        <!-- Date Filter - Now aligned to the right with consistent widths -->
+        <div class="d-flex align-items-center">
+            <div class="d-flex align-items-center me-3">
+                <RadzenDatePicker @bind-Value="fromDate" DateFormat="yyyy-MM-dd" Placeholder="Select Start Date"
+                                  Style="width: 180px;" />
+            </div>
+            <div class="d-flex align-items-center">
+                <RadzenDatePicker @bind-Value="toDate" DateFormat="yyyy-MM-dd" Placeholder="Select End Date"
+                                  Style="width: 180px;" />
+            </div>
+        </div>
+    </div>
+
+    <RadzenDataGrid Data="@FilterDamageProductHandoverDuePaymentSummaryList" TItem="DamageProductHandoverDuePaymentSummary" PageSize="10" AllowPaging="true" AllowSorting="true" AllowFiltering="false">
+        <Columns>
+
+            <RadzenDataGridColumn TItem="DamageProductHandoverDuePaymentSummary" Title="Supplier Name" Width="200px">
+                <Template Context="item">
+                    <div>@item.SupplierName</div>
+                </Template>
+            </RadzenDataGridColumn>
+            <RadzenDataGridColumn TItem="DamageProductHandoverDuePaymentSummary" Title="Paid Amount" Width="150px" TextAlign="TextAlign.Right">
+                <Template Context="item">
+                    <div>৳@item.PaidAmount.ToString("N2")</div>
+                </Template>
+                <FooterTemplate>
+                    <div class="text-end fw-bold">৳@FilterDamageProductHandoverDuePaymentSummaryList.Sum(o => o.PaidAmount).ToString("N2")</div>
+                </FooterTemplate>
+            </RadzenDataGridColumn>
+            <RadzenDataGridColumn TItem="DamageProductHandoverDuePaymentSummary" Title="Due Amount" Width="150px" TextAlign="TextAlign.Right">
+                <Template Context="item">
+                    <div>৳@item.DueAmount.ToString("N2")</div>
+                </Template>
+                <FooterTemplate>
+                    <div class="text-end fw-bold">৳@FilterDamageProductHandoverDuePaymentSummaryList.Sum(o => o.DueAmount).ToString("N2")</div>
+                </FooterTemplate>
+            </RadzenDataGridColumn>
+            <RadzenDataGridColumn TItem="DamageProductHandoverDuePaymentSummary" Property="@nameof(DamageProductHandoverDuePaymentSummary.Date)" Title="Date Time" Width="200px" />
+        </Columns>
+    </RadzenDataGrid>
+</div>
+
+@code {
+    [Parameter]
+    public int SupplierId { get; set; }
+
+    [Inject]
+    private ICustomer m_Customer { get; set; }
+
+    [Inject]
+    private IDamageProductHandover m_DamageProductHandover { get; set; }
+
+    [Inject]
+    private ILookup m_Lookup { get; set; }
+
+    [Inject]
+    private IJSRuntime JSRuntime { get; set; }
+
+    [Inject]
+    private NavigationManager _navigationManager { get; set; }
+
+    public IEnumerable<DamageProductHandoverDuePaymentSummary> DamageProductHandoverDuePaymentSummaryList { get; set; } = new List<DamageProductHandoverDuePaymentSummary>();
+    public IEnumerable<DamageProductHandoverDuePaymentSummary> FilterDamageProductHandoverDuePaymentSummaryList { get; set; } = new List<DamageProductHandoverDuePaymentSummary>();
+
+    private string search = string.Empty;
+    private string SupplierName = string.Empty;
+
+    private DateTime? _fromDate;
+    private DateTime? _toDate;
+    private Message notificationComponent;
+
+    protected override async Task OnInitializedAsync()
+    {      
+        SupplierName = m_Customer.GetCustomer(SupplierId).Name;
+        DamageProductHandoverDuePaymentSummaryList = await m_DamageProductHandover.GetDamageProductHandoverDuePaymentSummary(SupplierId);
+        FilterDamageProductHandoverDuePaymentSummaryList = DamageProductHandoverDuePaymentSummaryList;
+    }
+
+
+    private void Cancel()
+    {
+        _navigationManager.NavigateTo($"/DamageProductHandoverSummary");
+    }
+
+    public DateTime? fromDate
+    {
+        get => _fromDate;
+        set
+        {
+            if (_fromDate != value)
+            {
+                _fromDate = value;
+                FilterData();
+            }
+        }
+    }
+
+    public DateTime? toDate
+    {
+        get => _toDate;
+        set
+        {
+            if (_toDate != value)
+            {
+                _toDate = value;
+                FilterData();
+            }
+        }
+    }
+
+    private void OnSearch(ChangeEventArgs e)
+    {
+        search = e.Value?.ToString() ?? string.Empty;
+        FilterData();
+    }
+
+    private void FilterData()
+    {
+        if (string.IsNullOrWhiteSpace(search))
+        {
+            FilterDamageProductHandoverDuePaymentSummaryList = DamageProductHandoverDuePaymentSummaryList;
+        }
+        else
+        {
+            FilterDamageProductHandoverDuePaymentSummaryList = DamageProductHandoverDuePaymentSummaryList.Where(c =>
+                (!string.IsNullOrEmpty(c.SupplierName) && c.SupplierName.Contains(search, StringComparison.OrdinalIgnoreCase)) ||
+                (!string.IsNullOrEmpty(c.PaidAmount.ToString()) && c.PaidAmount.ToString().Contains(search, StringComparison.OrdinalIgnoreCase)) ||
+                (!string.IsNullOrEmpty(c.DueAmount.ToString()) && c.DueAmount.ToString().Contains(search, StringComparison.OrdinalIgnoreCase)) ||
+                (!string.IsNullOrEmpty(c.Date.ToString()) && c.Date.ToString().Contains(search, StringComparison.OrdinalIgnoreCase))
+            ).ToList();
+        }
+
+
+        // Apply date filtering with proper date-only comparison
+        if (fromDate.HasValue || toDate.HasValue)
+        {
+            // Convert to DateOnly for comparison (or use DateTime.Date)
+            var filterFrom = fromDate?.Date ?? DateTime.MinValue;
+            var filterTo = toDate?.Date.AddDays(1) ?? DateTime.MaxValue; // Add 1 day to include entire end date
+
+            FilterDamageProductHandoverDuePaymentSummaryList = FilterDamageProductHandoverDuePaymentSummaryList.Where(x =>
+                x.Date.Date >= filterFrom &&
+                x.Date.Date < filterTo
+            ).ToList();
+        }
+
+    }
+
+    public async Task ExportToPdf()
+    {
+        if (!ValidationHelper.ValidateAndNotify(FilterDamageProductHandoverDuePaymentSummaryList, notificationComponent))
+            return;
+
+        var document = Document.Create(container =>
+        {
+            container.Page(page =>
+            {
+                // Set individual margins
+                page.MarginTop(20);     // Top margin
+                page.MarginBottom(20);  // Bottom margin
+                page.MarginLeft(40);    // Left margin
+                page.MarginRight(40);   // Right margin
+
+                page.Size(PageSizes.A4);
+                page.DefaultTextStyle(style => style.FontSize(10));
+
+                page.Header().Element(ComposeHeader);
+
+                page.Content()
+                    .PaddingVertical(10)
+                    .Table(table =>
+                    {
+                        table.ColumnsDefinition(columns =>
+                        {
+                            columns.RelativeColumn(2);
+                            columns.RelativeColumn(3);
+                            columns.RelativeColumn(3);
+                            columns.RelativeColumn(3);
+                        });
+
+                        // Header
+                        table.Header(header =>
+                        {
+                            header.Cell().Background("#f5f5f5").Padding(5).Text("Supplier Name").Bold();
+                            header.Cell().Background("#f5f5f5").Padding(5).Text("Paid Amount").Bold();
+                            header.Cell().Background("#f5f5f5").Padding(5).Text("Due Amount").Bold();
+                            header.Cell().Background("#f5f5f5").Padding(5).Text("Date Time").Bold();
+                        });
+
+                        // Data rows
+                        foreach (var customer in FilterDamageProductHandoverDuePaymentSummaryList)
+                        {
+                            table.Cell().PaddingVertical(5).PaddingHorizontal(5).Text(customer.SupplierName);
+                            table.Cell().PaddingVertical(5).PaddingHorizontal(5).Text($"৳{customer.PaidAmount:N2}");
+                            table.Cell().PaddingVertical(5).PaddingHorizontal(5).Text($"৳{customer.DueAmount:N2}");
+                            table.Cell().PaddingVertical(5).PaddingHorizontal(5).Text(customer.Date);
+                        }
+
+                        // Total Row
+                        table.Cell().PaddingVertical(5).PaddingHorizontal(5).AlignRight().Text("Total").Bold();
+                        table.Cell().PaddingVertical(5).PaddingHorizontal(5).Text($"৳{FilterDamageProductHandoverDuePaymentSummaryList.Sum(x => x.PaidAmount):N2}").Bold();
+                        table.Cell().PaddingVertical(5).PaddingHorizontal(5).Text($"৳{FilterDamageProductHandoverDuePaymentSummaryList.Sum(x => x.DueAmount):N2}").Bold();
+                        table.Cell().PaddingVertical(5).PaddingHorizontal(5).Text("").Bold();
+                    });
+
+                page.Footer().Row(row =>
+                    {
+                        row.RelativeItem().AlignLeft().Text(DateTime.Now.ToString("dd/MM/yyyy HH:mm"));
+                        row.RelativeItem().AlignCenter().Text(text =>
+                        {
+                            text.CurrentPageNumber();
+                            text.Span(" / ");
+                            text.TotalPages();
+                        });
+                        row.RelativeItem(); // Empty space for right side (optional)
+                    });
+            });
+        });
+
+        using var stream = new MemoryStream();
+        document.GeneratePdf(stream);
+
+        var fileName = $"PaymentTransactionList_{DateTime.Now:yyyyMMddHHmmss}.pdf";
+        await JSRuntime.InvokeVoidAsync("downloadFile", fileName, "application/pdf", stream.ToArray());
+    }
+
+    void ComposeHeader(IContainer container)
+    {
+        var company = m_Lookup.GetCompanyInfo();
+
+        container.Row(row =>
+        {
+            row.RelativeItem().Column(column =>
+            {
+                column.Item().AlignCenter().Text($"{company.CompanyName}").Bold().FontSize(16);
+                column.Item().AlignCenter().Text($"{company.Address}").FontSize(10);
+                column.Item().AlignCenter().Text($"SR {SupplierName} Payment Transaction History List Report").Bold().FontSize(10);
+            });
+        });
+    }
+
+}

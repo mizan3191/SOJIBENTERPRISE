@@ -1,0 +1,416 @@
+﻿@page "/DamageProductReturn/{CustomerId:int}/{OrderId:int}"
+
+@rendermode @(new InteractiveServerRenderMode(prerender: false))
+@inject NotificationService NotificationService
+
+<Message @ref="notificationComponent" />
+
+<style>
+    .dataForm .table {
+        table-layout: fixed; /* Ensures column widths are respected */
+        width: 100%; /* Ensures the table takes up the full width */
+    }
+
+        .dataForm .table th,
+        .dataForm .table td {
+            padding: 6px; /* Adjusts general padding */
+        }
+
+            /* Column Widths */
+            .dataForm .table th:nth-child(1), /* Product */
+            .dataForm .table td:nth-child(1) {
+                width: 50%; /* Expand the first column */
+            }
+
+            .dataForm .table th:nth-child(2), /* Quantity */
+            .dataForm .table td:nth-child(2) {
+                width: 10%;
+            }
+
+            .dataForm .table th:nth-child(3), /* Unit of Price */
+            .dataForm .table td:nth-child(3) {
+                width: 10%;
+            }
+
+            .dataForm .table th:nth-child(4), /* Price (%) */
+            .dataForm .table td:nth-child(4) {
+                width: 15%; /* Explicit width for Price column */
+            }
+
+            .dataForm .table th:nth-child(5), /* Action */
+            .dataForm .table td:nth-child(5) {
+                width: 15%; /* Explicit width for Action column */
+            }
+
+            /* Align Price column to the right */
+            .dataForm .table td:nth-child(7),
+            .dataForm .table tfoot td:nth-child(3) {
+                text-align: right;
+            }
+
+        /* Ensure input elements respect column width */
+        .dataForm .table input {
+            width: 100%; /* Make input elements fill the column width */
+            box-sizing: bDamageProductReturn-box; /* Include padding and bDamageProductReturn in the width */
+        }
+</style>
+
+<h3>Damage Entry</h3>
+
+<div class="card dataForm ">
+    <div class="row mt-3 ">       
+        <div class="col-md-4 mb-3">
+            <RadzenDropDown TValue="int?"
+                            @bind-Value="SelectedSupplierId"
+                            Data="@SupplierList"
+                            TextProperty="Name"
+                            ValueProperty="Id"
+                            Placeholder="Select Supplier"
+                            AllowClear="true"
+                            AllowFiltering="true"
+                            FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
+                            Change="@OnSupplierChanged"
+                            Style="width:100%">
+            </RadzenDropDown>
+        </div>
+
+        <div class="col-md-4 mb-3">
+            <RadzenDropDown TValue="int?"
+                            @bind-Value="SelectedProductId"
+                            Data="@Products"
+                            TextProperty="DisplayNameSize"
+                            ValueProperty="Id"
+                            Placeholder="Select Product"
+                            AllowClear="true"
+                            AllowFiltering="true"
+                            FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
+                            Style="width:100%">
+            </RadzenDropDown>
+        </div>
+
+        <div class="col-md-4 mb-3">
+            <RadzenButton Disabled="@(SelectedProductId == null)"
+                          Text="Add"
+                          Style="width:25%"
+                          ButtonStyle="ButtonStyle.Secondary"
+                          Click="AddProduct" />
+        </div>
+    </div>
+</div>
+<div class="card dataForm mt-3 ">
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Product</th>
+                <th class="text-end">Unit P</th>
+                <th>Qty</th>
+                <th class="text-end">Price</th>
+                <th class="text-end"></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var DamageProductReturnDetail in Details)
+            {
+                <tr>
+                    <td>
+                        <RadzenDropDown TValue="int"
+                                        @bind-Value="DamageProductReturnDetail.ProductId"
+                                        Data="@AllProducts"
+                                        TextProperty="DisplayNameSize"
+                                        ValueProperty="Id"
+                                        Placeholder="Select a product"
+                                        FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
+                                        AllowFiltering="false"
+                                        Change="@(args => OnProductChanged(DamageProductReturnDetail, args))">
+                            <Template Context="product">
+                                @product.ProductNo - @product.Name (@product.ProductsSize.Name)
+                            </Template>
+                        </RadzenDropDown>
+
+                    </td>
+                    <td class="text-end">
+                        <input type="number" @bind="DamageProductReturnDetail.UnitofPrice" @onblur="(e) => OnUnitPriceChanged(DamageProductReturnDetail)" />
+                    </td>
+                    <td>
+                        <input type="number" @bind="DamageProductReturnDetail.Quantity" @onblur="(e) => OnQuantityChanged(DamageProductReturnDetail)" />
+                    </td>
+                    <td class="text-end">৳@DamageProductReturnDetail.Price.ToString("N2")</td>
+                    <td class="text-end"><RadzenButton Icon="delete" title="Delete" ButtonStyle="ButtonStyle.Danger" Click="() => RemoveProduct(DamageProductReturnDetail)" /></td>
+                </tr>
+            }
+        </tbody>
+        <tfoot>
+            <tr>
+                <td colspan="3" class="text-end"><strong>Total:</strong></td>
+                <td colspan="1" class="text-end"><strong>৳@Details.Sum(od => od.Price).ToString("N2")</strong></td>
+            </tr>
+        </tfoot>
+    </table>
+
+    @* <RadzenButton Text="Add New Product" Style="width:25%" ButtonStyle="ButtonStyle.Secondary" Click="AddProduct" /> *@
+
+</div>
+
+<hr />
+
+
+<RadzenButton Text="Save" ButtonStyle="ButtonStyle.Primary" Click="SaveDamageProductReturn" class="mt-2 mb-2" />
+<RadzenButton Text="Cancel" ButtonStyle="ButtonStyle.Secondary" Click="Cancel" Class="m-2" />
+
+
+@code {
+    [Parameter]
+    public int CustomerId { get; set; }
+
+    [Parameter]
+    public int OrderId { get; set; }
+
+    [Inject]
+    private IDamageProductReturns m_DamageProductReturn { get; set; }
+
+    [Inject]
+    private IProduct m_Product { get; set; }
+
+    [Inject]
+    private ILookup m_Lookup { get; set; }
+
+    [Inject]
+    private NavigationManager _navigationManager { get; set; }
+
+    private Message notificationComponent;
+
+    public List<DamageProductReturnDetailViewModel> Details { get; set; } = new List<DamageProductReturnDetailViewModel>();
+
+    public IEnumerable<Product> Products { get; set; } = new List<Product>();
+    public IEnumerable<Product> AllProducts { get; set; } = new List<Product>();
+    //private IEnumerable<Lov> CustomerList { get; set; } = new List<Lov>();
+    public IEnumerable<Lov> SupplierList { get; set; } = new List<Lov>();
+
+    public int? SelectedSupplierId { get; set; }
+    public int? SelectedProductId { get; set; }
+
+    public DamageProductReturn DamageProductReturn { get; set; } = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        SupplierList = await m_Lookup.GetAllSupplierList();
+        //SupplierList = SupplierList.Where(c => !c.IsDeleted);
+
+        AllProducts = await m_Product.GetAllProduct();
+
+        Products = AllProducts;
+
+        DamageProductReturn = await m_DamageProductReturn.GetDamageProductReturnByOrderId(OrderId);
+
+        if (DamageProductReturn is null)
+        {
+            DamageProductReturn = new()
+                {
+                    CustomerId = CustomerId,
+                    OrderId = OrderId
+                };
+        }
+        else
+        {
+            await LoadExistingDamageProductReturn();
+        }
+    }
+
+    private void AddProduct()
+    {
+        if (SelectedProductId == null || SelectedProductId.Value <= 0)
+        {
+            // If no product selected, just add an empty row
+            Details.Add(new DamageProductReturnDetailViewModel());
+            return;
+        }
+
+        // Create new detail with the selected product
+        var newDetail = new DamageProductReturnDetailViewModel()
+            {
+                ProductId = SelectedProductId.Value
+            };
+
+        // Initialize product details
+        var selectedProduct = Products.FirstOrDefault(p => p.Id == SelectedProductId.Value);
+        if (selectedProduct != null)
+        {
+            if (selectedProduct.SellingPrice != null)
+            {
+                newDetail.UnitofPrice = selectedProduct.SellingPrice;
+                newDetail.LossUnitofPrice = selectedProduct.SellingPrice - selectedProduct.BuyingPrice;
+            }
+            else
+            {
+                newDetail.UnitofPrice = 0;
+                newDetail.LossUnitofPrice = 0;
+            }
+
+            // Initialize with default quantity 1
+            newDetail.Quantity = 1;
+            newDetail.Price = newDetail.UnitofPrice * newDetail.Quantity;
+        }
+
+        Details.Add(newDetail);
+
+        // Clear the selected product
+        SelectedProductId = null;
+
+        CalculateTotalPay();
+    }
+
+    private void RemoveProduct(DamageProductReturnDetailViewModel DamageProductReturnDetail)
+    {
+        Details.Remove(DamageProductReturnDetail);
+        CalculateTotalPay();
+    }
+
+    private void OnProductChanged(DamageProductReturnDetailViewModel DamageProductReturnDetail, object value)
+    {
+        if (value is int selectedProductId)
+        {
+            var product = Products.FirstOrDefault(x => x.Id == selectedProductId);
+            if (product.SellingPrice != null)
+            {
+                DamageProductReturnDetail.UnitofPrice = product.SellingPrice;
+                DamageProductReturnDetail.LossUnitofPrice = product.SellingPrice - product.BuyingPrice;
+            }
+            else
+            {
+                DamageProductReturnDetail.UnitofPrice = 0;
+                DamageProductReturnDetail.LossUnitofPrice = 0;
+            }
+
+            DamageProductReturnDetail.ProductId = selectedProductId;
+            DamageProductReturnDetail.Price = DamageProductReturnDetail.UnitofPrice * DamageProductReturnDetail.Quantity;
+
+            CalculateTotalPay();
+        }
+    }
+
+    private void OnQuantityChanged(DamageProductReturnDetailViewModel DamageProductReturnDetail)
+    {
+        if (DamageProductReturnDetail.ProductId <= 0)
+        {
+            return;
+        }
+
+        DamageProductReturnDetail.Price = DamageProductReturnDetail.UnitofPrice * DamageProductReturnDetail.Quantity;
+
+        CalculateTotalPay();
+
+    }
+
+    private void OnUnitPriceChanged(DamageProductReturnDetailViewModel DamageProductReturnDetail)
+    {
+        if (DamageProductReturnDetail.ProductId <= 0)
+        {
+            return;
+        }
+
+        DamageProductReturnDetail.Price = DamageProductReturnDetail.UnitofPrice * DamageProductReturnDetail.Quantity;
+
+        CalculateTotalPay();
+    }
+
+    private void OnDeliveryChargeChanged()
+    {
+        CalculateTotalPay();
+    }
+
+    private void OnTotalPayChanged()
+    {
+        CalculateTotalPay();
+    }
+
+    private void SaveDamageProductReturn()
+    {
+        if (DamageProductReturn.CustomerId <= 0)
+        {
+            notificationComponent.Show("Error Summary", "Customer is required to save the Damage Product Return.", NotificationSeverity.Warning);
+            return;
+        }
+
+        DamageProductReturn.DamageProductReturnDetails = Details.Select(od => new DamageProductReturnDetails
+            {
+                ProductId = od.ProductId,
+                Quantity = od.Quantity,
+                UnitPrice = od.UnitofPrice,
+                Price = od.Price
+            }).ToList();
+
+        // if (DamageProductReturn.DamageProductReturnDetails == null || !DamageProductReturn.DamageProductReturnDetails.Any())
+        // {
+        //     notificationComponent.Show("Empty Order", "You must add at least one product", NotificationSeverity.Warning);
+        //     return;
+        // }
+
+        // if (DamageProductReturn.DamageProductReturnDetails.Any(od => od.ProductId <= 0))
+        // {
+        //     notificationComponent.Show("Invalid Product", "One or more products are not selected", NotificationSeverity.Warning);
+        //     return;
+        // }
+
+        // if (DamageProductReturn.DamageProductReturnDetails.Any(od => od.UnitPrice <= 0))
+        // {
+        //     notificationComponent.Show("Invalid Product", "One or more products unit price is zero", NotificationSeverity.Warning);
+        //     return;
+        // }
+        DamageProductReturn.Date = m_Lookup.GetOrderDate(DamageProductReturn.OrderId);
+
+        if (DamageProductReturn.Id > 0)
+        {
+            m_DamageProductReturn.UpdateDamageProductReturn(DamageProductReturn);
+            notificationComponent.Show("Updated Summary", "Damage Product Return has been Updated successfully", NotificationSeverity.Warning);
+        }
+        else
+        {
+            m_DamageProductReturn.CreateDamageProductReturn(DamageProductReturn);
+            notificationComponent.Show("Added Summary", "Damage Product Return has been Added successfully", NotificationSeverity.Success);
+        }
+
+        _navigationManager.NavigateTo($"/Sales");
+    }
+
+    private void CalculateTotalPay()
+    {
+        DamageProductReturn.TotalAmount = Details.Sum(od => od.Price);
+    }
+
+    private async Task LoadExistingDamageProductReturn()
+    {
+        if (DamageProductReturn != null)
+        {
+            Details = DamageProductReturn.DamageProductReturnDetails.Select(od =>
+            {
+                return new DamageProductReturnDetailViewModel
+                    {
+                        ProductId = od.ProductId,
+                        Quantity = od.Quantity,
+                        UnitofPrice = od.UnitPrice,
+                        Price = od.Price
+                    };
+            }).ToList();
+
+            CalculateTotalPay();
+        }
+    }
+
+
+    private void OnSupplierChanged()
+    {
+        if (SelectedSupplierId.HasValue)
+        {
+            Products = AllProducts.Where(p => p.SupplierId == SelectedSupplierId.Value).ToList();
+        }
+        else
+        {
+            Products = AllProducts;
+        }
+    }
+
+    private void Cancel()
+    {
+        _navigationManager.NavigateTo($"/Sales");
+    }
+}

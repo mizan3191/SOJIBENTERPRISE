@@ -1,0 +1,421 @@
+﻿@page "/ShopDuesSellTime/{DSRCustomerId:int}/{OrderId:int}"
+
+@rendermode @(new InteractiveServerRenderMode(prerender: false))
+@inject DialogService DialogService
+
+<Message @ref="notificationComponent" />
+
+<h3>Shop Dues</h3>
+
+@if (DSRShopDueList == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <div class="card-body p-0">
+
+        <div class="d-flex align-items-center mb-3" style="width: 100%;">
+
+            <RadzenButton Text="Back" ButtonStyle="ButtonStyle.Secondary" Click="Cancel" Class="m-2" />
+
+            <RadzenButton Click="@AddNew" Text="Add New" ButtonStyle="ButtonStyle.Success" />
+
+            <!-- Search Box -->
+            <div class="d-flex align-items-center border rounded me-3 mx-3" style="width: fit-content;">
+                <!-- Search Icon -->
+                <span class="ps-2" style="font-size: 1.2rem; color: #6c757d;">
+                    <i class="fas fa-search"></i> <!-- Font Awesome search icon -->
+                </span>
+
+                <!-- Search Text Box -->
+                <RadzenTextBox @bind-Value="@search" TValue="string" Placeholder="Search..." @oninput="OnSearch"
+                               Style="border: none; box-shadow: none; padding-left: 0.5rem;" />
+            </div>
+
+            <!-- Export Button -->
+            <div class="d-flex align-items-center border rounded" style="width: fit-content;">
+                <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="1rem;" Wrap="FlexWrap.Wrap" Style="padding-left: 0.10rem;">
+                    <RadzenButton Text="Export To PDF" Icon="picture_as_pdf" Click="@(args => ExportToPdf())" />
+                </RadzenStack>
+            </div>
+        </div>
+        <RadzenDataGrid Data="@FilterDSRShopDueList" TItem="DSRShopDueForOrderDTO" PageSize="10" AllowPaging="true" AllowSorting="true" AllowFiltering="false">
+            <Columns>
+                <RadzenDataGridColumn TItem="DSRShopDueForOrderDTO" Title="Shop Name" Width="200px">
+                    <Template Context="item">
+                        <div>@item.ShopName</div>
+                    </Template>
+                </RadzenDataGridColumn>
+                <RadzenDataGridColumn TItem="DSRShopDueForOrderDTO" Title="Amount" Width="100px" TextAlign="TextAlign.Right">
+                    <Template Context="item">
+                        <div>৳@item.DueAmount.ToString("N2")</div>
+                    </Template>
+                    <FooterTemplate>
+                        <div class="text-end fw-bold">৳@FilterDSRShopDueList.Sum(o => o.DueAmount).ToString("N2")</div>
+                    </FooterTemplate>
+                </RadzenDataGridColumn>
+                <RadzenDataGridColumn TItem="DSRShopDueForOrderDTO" Property="@nameof(DSRShopDueForOrderDTO.Date)" Title="Date Time" Width="150px" />
+                <RadzenDataGridColumn TItem="DSRShopDueForOrderDTO" Title="Referred By" Width="150px">
+                    <Template Context="item">
+                        <div>@item.CustomerName</div>
+                    </Template>
+                </RadzenDataGridColumn>
+                <RadzenDataGridColumn TItem="DSRShopDueForOrderDTO" Title="Issued By" Width="150px">
+                    <Template Context="item">
+                        <div>@item.DSRCustomerName</div>
+                    </Template>
+                </RadzenDataGridColumn>
+                <RadzenDataGridColumn TItem="DSRShopDueForOrderDTO" Title="Actions" Width="100px">
+                    <Template Context="context">
+                        <RadzenButton Icon="edit" ButtonStyle="ButtonStyle.Primary" Size="ButtonSize.Small"
+                                      Click="() => Edit(context.Id)" style="margin-right: 5px;" title="Edit" />
+                        <RadzenButton Icon="delete" ButtonStyle="ButtonStyle.Danger" Size="ButtonSize.Small"
+                                      Click="() => ConfirmDelete(context.Id)" title="Delete" />
+
+                    </Template>
+                </RadzenDataGridColumn>
+            </Columns>
+        </RadzenDataGrid>
+    </div>
+}
+
+@if (showModal)
+{
+    <div class="modal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="1" style="display:block">
+        <div class="modal-dialog modal-lg modal-dialog-scrollable modal-dialog-centered">
+            <div class="modal-content card dataFormPop">
+                <div class="modal-header">
+                    <h3>@(DSRShopDue.Id > 0 ? "Edit Shop Due" : "Add Shop Due")</h3>
+                </div>
+
+                <EditForm Model="@DSRShopDue" OnValidSubmit="HandleSubmit">
+                    <div class="card dataForm ">
+                        <div class="row m-3">
+                            <div class="col-md-4 mb-3">
+                                <label class="Asterisk form-label">Referred By</label>
+                                <RadzenDropDown @bind-Value="DSRShopDue.CustomerId"
+                                                Data="@CustomerList"
+                                                TextProperty="Name"
+                                                ValueProperty="Id"
+                                                Placeholder="Search Name"
+                                                Class="w-100"
+                                                AllowClear="true"
+                                                AllowFiltering="true"
+                                                FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" />
+                            </div>
+
+                            <div class="col-md-4 mb-3">
+                                <label class="Asterisk form-label">Shop Name</label>
+                                <RadzenDropDown @bind-Value="DSRShopDue.ShopId"
+                                                Data="@ShopList"
+                                                TextProperty="Name"
+                                                ValueProperty="Id"
+                                                Placeholder="Search Shop Name"
+                                                Class="w-100"
+                                                AllowClear="true"
+                                                AllowFiltering="true"
+                                                FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" />
+                            </div>
+                        </div>
+                        <div class="row m-3">
+                            <div class="col-md-4 mb-3">
+                                <label class="Asterisk form-label">Due Amount</label>
+                                <InputNumber @bind-Value="DSRShopDue.DueAmount" class="form-control"></InputNumber>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">Date</label>
+                                <RadzenDatePicker @bind-Value="DSRShopDue.Date" DateFormat="yyyy-MM-dd" Class="w-100" />
+                            </div>
+                        </div>
+                        <br />
+                        <div class="col-md-12">
+                            <RadzenButton Text="Save" ButtonStyle="ButtonStyle.Primary" Type="submit" Class="m-2" />
+                            <RadzenButton Text="Cancel" ButtonStyle="ButtonStyle.Secondary" Click="CloseModal" Class="m-2" />
+                        </div>
+                    </div>
+                </EditForm>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter]
+    public int DSRCustomerId { get; set; }
+
+    [Parameter]
+    public int OrderId { get; set; }
+
+    [Inject]
+    private ILookup m_Lookup { get; set; }
+
+    [Inject]
+    private IDSRShopDue m_DSRShopDue { get; set; }
+
+    [Inject]
+    private NavigationManager _navigationManager { get; set; }
+
+    public IEnumerable<Lov> ShopList { get; set; } = new List<Lov>();
+    private IEnumerable<Lovd> CustomerList { get; set; } = new List<Lovd>();
+
+    private bool showModal = false;
+
+    public DSRShopDue DSRShopDue { get; set; }
+    private Message notificationComponent;
+
+
+    [Inject]
+    private IJSRuntime JSRuntime { get; set; }
+
+    public IEnumerable<DSRShopDueForOrderDTO> DSRShopDueList { get; set; } = new List<DSRShopDueForOrderDTO>();
+
+    private IEnumerable<DSRShopDueForOrderDTO> FilterDSRShopDueList { get; set; } = new List<DSRShopDueForOrderDTO>();
+
+    private string search = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        CustomerList = await m_Lookup.GetAllCustomerList();
+        ShopList = await m_Lookup.GetAllShopList();
+
+        //ShopList = ShopList.Where(c => !c.IsDeleted);
+        //CustomerList = CustomerList.Where(c => !c.IsDeleted);
+
+        LoadData();
+    }
+
+    private async Task HandleSubmit()
+    {
+
+        if (DSRShopDue.CustomerId <= 0 || DSRShopDue.CustomerId is null)
+        {
+            notificationComponent.Show("Validation Error", "Please select a name before proceeding.", NotificationSeverity.Warning);
+            return;
+        }
+
+        if (DSRShopDue.ShopId <= 0)
+        {
+            notificationComponent.Show("Validation Error", "Please select a shop before proceeding.", NotificationSeverity.Warning);
+            return;
+        }
+
+        if (DSRShopDue.DueAmount <= 0)
+        {
+            notificationComponent.Show("Validation Error", "Due amount must be greater than zero.", NotificationSeverity.Warning);
+            return;
+        }
+
+        showModal = false;
+
+        if (DSRShopDue.Id > 0)
+        {
+            m_DSRShopDue.UpdateDSRShopDue(DSRShopDue);
+            notificationComponent.Show("Updated Summary", "Shop Due has been Updated successfully", NotificationSeverity.Warning);
+        }
+        else
+        {
+            m_DSRShopDue.CreateDSRShopDue(DSRShopDue);
+            notificationComponent.Show("Added Summary", "Shop Due has been Added successfully", NotificationSeverity.Success);
+        }
+
+        LoadData();
+        StateHasChanged();
+    }
+
+    private async Task ConfirmDelete(int id)
+    {
+        var options = new ConfirmOptions()
+        {
+            OkButtonText = "Yes, Delete",
+            CancelButtonText = "No, Keep",
+            ShowClose = true,
+        };
+
+        bool? confirmed = await DialogService.Confirm("Are you absolutely sure you want to delete this item?", "Delete Confirmation", options);
+
+        if (confirmed == true)
+        {
+            Delete(id);
+        }
+    }
+
+    private void Delete(int id)
+    {
+        m_DSRShopDue.DeleteShopDue(id);
+        notificationComponent.Show("Delete Summary", "Shop Due has been Deleted successfully", NotificationSeverity.Error);
+
+        LoadData();
+        StateHasChanged(); // If you are managing the data source manually
+    }
+
+    private void Edit(int id)
+    {
+        showModal = true;
+
+        if (id > 0)
+        {
+            DSRShopDue = m_DSRShopDue.GetDSRShopDue(id);
+        }
+        else
+        {
+            DSRShopDue = new DSRShopDue()
+            {
+                DSRCustomerId = DSRCustomerId,
+                OrderId = OrderId,
+                Date = m_Lookup.GetOrderDate(OrderId),
+            };
+        }
+    }
+
+    private void AddNew()
+    {
+        DSRShopDue = new DSRShopDue()
+        {
+            DSRCustomerId = DSRCustomerId,
+            OrderId = OrderId,
+            Date = m_Lookup.GetOrderDate(OrderId),
+        };
+
+        showModal = true;
+    }
+
+    private void LoadData()
+    {
+        DSRShopDueList = m_DSRShopDue.GetAllDSRShopDueByOrderId(OrderId);
+        FilterDSRShopDueList = DSRShopDueList;
+    }
+
+    private void CloseModal()
+    {
+        showModal = false;
+    }
+
+
+    private void Cancel()
+    {
+        _navigationManager.NavigateTo($"/Sales");
+    }
+
+
+    private void OnSearch(ChangeEventArgs e)
+    {
+        search = e.Value?.ToString() ?? string.Empty;
+        FilterData();
+    }
+
+    private void FilterData()
+    {
+        if (string.IsNullOrWhiteSpace(search))
+        {
+            FilterDSRShopDueList = DSRShopDueList;
+        }
+        else
+        {
+            FilterDSRShopDueList = DSRShopDueList.Where(c =>
+                (!string.IsNullOrEmpty(c.ShopName) && c.ShopName.Contains(search, StringComparison.OrdinalIgnoreCase)) ||
+                (!string.IsNullOrEmpty(c.DueAmount.ToString()) && c.DueAmount.ToString().Contains(search, StringComparison.OrdinalIgnoreCase)) ||
+                (!string.IsNullOrEmpty(c.Date.ToString()) && c.Date.ToString().Contains(search, StringComparison.OrdinalIgnoreCase)) ||
+                (!string.IsNullOrEmpty(c.CustomerName) && c.CustomerName.Contains(search, StringComparison.OrdinalIgnoreCase))
+            ).ToList();
+        }
+
+
+    }
+
+    public async Task ExportToPdf()
+    {
+        if (!ValidationHelper.ValidateAndNotify(FilterDSRShopDueList, notificationComponent))
+            return;
+
+        var document = Document.Create(container =>
+        {
+            container.Page(page =>
+            {
+                // Set individual margins
+                page.MarginTop(20);     // Top margin
+                page.MarginBottom(20);  // Bottom margin
+                page.MarginLeft(40);    // Left margin
+                page.MarginRight(40);   // Right margin
+
+                page.Size(PageSizes.A4);
+                page.DefaultTextStyle(style => style.FontSize(10));
+
+                page.Header().Element(ComposeHeader);
+
+                page.Content()
+                    .PaddingVertical(10)
+                    .Table(table =>
+                    {
+                        table.ColumnsDefinition(columns =>
+                        {
+                            columns.RelativeColumn(3);
+                            columns.RelativeColumn(2);
+                            columns.RelativeColumn(2);
+                            columns.RelativeColumn(3);
+                        });
+
+                        // Header
+                        table.Header(header =>
+                        {
+                            header.Cell().Background("#f5f5f5").Padding(5).Text("Shop Name").Bold();
+                            header.Cell().Background("#f5f5f5").Padding(5).Text("Amount").Bold();
+                            header.Cell().Background("#f5f5f5").Padding(5).Text("Issued By").Bold();
+                            header.Cell().Background("#f5f5f5").Padding(5).Text("Date Time").Bold();
+                        });
+
+                        // Data rows
+                        foreach (var customer in FilterDSRShopDueList)
+                        {
+                            table.Cell().PaddingVertical(5).PaddingHorizontal(5).Text(customer.ShopName);
+                            table.Cell().PaddingVertical(5).PaddingHorizontal(5).Text($"৳{customer.DueAmount:N2}");
+                            table.Cell().PaddingVertical(5).PaddingHorizontal(5).Text(customer.CustomerName);
+                            table.Cell().PaddingVertical(5).PaddingHorizontal(5).Text(customer.Date);
+
+                        }
+
+                        // Total Row
+                        table.Cell().ColumnSpan(1).PaddingVertical(5).PaddingHorizontal(5).AlignRight().Text("Total").Bold();
+                        table.Cell().PaddingVertical(5).PaddingHorizontal(5).Text($"৳{FilterDSRShopDueList.Sum(x => x.DueAmount):N2}").Bold();
+                        table.Cell().PaddingVertical(5).PaddingHorizontal(5).Text("").Bold();
+                        table.Cell().PaddingVertical(5).PaddingHorizontal(5).Text("").Bold();
+                    });
+
+                page.Footer().Row(row =>
+                    {
+                        row.RelativeItem().AlignLeft().Text(DateTime.Now.ToString("dd/MM/yyyy HH:mm"));
+                        row.RelativeItem().AlignCenter().Text(text =>
+                        {
+                            text.CurrentPageNumber();
+                            text.Span(" / ");
+                            text.TotalPages();
+                        });
+                        row.RelativeItem(); // Empty space for right side (optional)
+                    });
+            });
+        });
+
+        using var stream = new MemoryStream();
+        document.GeneratePdf(stream);
+
+        var fileName = $"Shop Dues_{DateTime.Now:yyyyMMddHHmmss}.pdf";
+        await JSRuntime.InvokeVoidAsync("downloadFile", fileName, "application/pdf", stream.ToArray());
+    }
+
+    void ComposeHeader(IContainer container)
+    {
+        var company = m_Lookup.GetCompanyInfo();
+
+        container.Row(row =>
+        {
+            row.RelativeItem().Column(column =>
+            {
+                column.Item().AlignCenter().Text($"{company.CompanyName}").Bold().FontSize(16);
+                column.Item().AlignCenter().Text($"{company.Address}").FontSize(10);
+                column.Item().AlignCenter().Text($"Shop Dues Report").Bold().FontSize(10);
+            });
+        });
+    }
+
+
+}

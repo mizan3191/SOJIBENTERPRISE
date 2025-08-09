@@ -1,0 +1,823 @@
+﻿@page "/Sale"
+@page "/Sale/{Id:int}"
+@page "/Sale/{Id:int}/{CustomerId:int}"
+@page "/Sale/{Id:int}/{CustomerId:int}/{OrderId:int}"
+
+@rendermode @(new InteractiveServerRenderMode(prerender: false))
+@inject NotificationService NotificationService
+
+<Message @ref="notificationComponent" />
+
+<style>
+    .dataForm .table {
+        table-layout: fixed; /* Ensures column widths are respected */
+        width: 100%; /* Ensures the table takes up the full width */
+    }
+
+        .dataForm .table th,
+        .dataForm .table td {
+            padding: 6px; /* Adjusts general padding */
+        }
+
+            /* Column Widths */
+            .dataForm .table th:nth-child(1), /* Product */
+            .dataForm .table td:nth-child(1) {
+                width: 20%; /* Expand the first column */
+            }
+
+            .dataForm .table th:nth-child(2), /* B Quantity */
+            .dataForm .table td:nth-child(2) {
+                width: 8%;
+            }
+
+            .dataForm .table th:nth-child(3), /* D Quantity */
+            .dataForm .table td:nth-child(3) {
+                width: 8%;
+            }
+
+            .dataForm .table th:nth-child(4), /* P Quantity */
+            .dataForm .table td:nth-child(4) {
+                width: 8%; /* Explicit width for Qty column */
+            }
+
+            .dataForm .table th:nth-child(5), /* T Quantity */
+            .dataForm .table td:nth-child(5) {
+                width: 6%;
+            }
+
+            .dataForm .table th:nth-child(6), /* U Price */
+            .dataForm .table td:nth-child(6) {
+                width: 15%;
+            }
+
+            .dataForm .table th:nth-child(7), /* Free */
+            .dataForm .table td:nth-child(7) {
+                width: 6%;
+            }
+
+            /* Dis */
+            /*  .dataForm .table th:nth-child(8),
+                    .dataForm .table td:nth-child(8) {
+                        width: 6%;
+                    } */
+
+            /* Dis Amount */
+
+            /*  .dataForm .table th:nth-child(9),
+                    .dataForm .table td:nth-child(9) {
+                        width: 6%;
+                    } */
+
+            .dataForm .table th:nth-child(8), /* Price */
+            .dataForm .table td:nth-child(8) {
+                width: 10%;
+            }
+
+
+            .dataForm .table th:nth-child(9), /* Action */
+            .dataForm .table td:nth-child(9) {
+                width: 4.5%;
+            }
+
+
+            /* Align Price column to the right */
+            .dataForm .table td:nth-child(7),
+            .dataForm .table tfoot td:nth-child(3) {
+                text-align: right;
+            }
+
+        /* Ensure input elements respect column width */
+        .dataForm .table input {
+            width: 100%; /* Make input elements fill the column width */
+            box-sizing: border-box; /* Include padding and border in the width */
+        }
+
+
+    .select-all-dropdown .rz-multiselect-select-all-label::after {
+        content: "Select All";
+        margin-left: 5px;
+    }
+
+    .select-all-dropdown .rz-multiselect-select-all-label {
+        display: flex;
+        align-items: center;
+        padding: 8px 16px;
+    }
+
+</style>
+
+<h3> Order Entry</h3>
+
+@if (CustomerId > 0)
+{
+    <ComPersonHeaderInfo Id="@CustomerId"></ComPersonHeaderInfo>
+}
+
+<div class="row mt-4">
+    <div class="col-md-3 mb-3">
+        <RadzenDropDown TValue="int?"
+                        @bind-Value="SelectedSupplierId"
+                        Data="@SupplierList"
+                        TextProperty="Name"
+                        ValueProperty="Id"
+                        Placeholder="Select Supplier"
+                        AllowClear="true"
+                        AllowFiltering="true"
+                        FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
+                        Change="@OnSupplierChanged"
+                        Style="width:100%">
+        </RadzenDropDown>
+    </div>
+    <div class="col-md-3">
+        <RadzenDropDown TValue="int?"
+                        @bind-Value="SelectedCategoryId"
+                        Data="@CategoryList"
+                        TextProperty="Name"
+                        ValueProperty="Id"
+                        Placeholder="Select Category"
+                        AllowClear="true"
+                        AllowFiltering="true"
+                        FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
+                        Change="@OnCategoryChanged"
+                        Style="width:100%">
+        </RadzenDropDown>
+    </div>
+
+    <div class="col-md-3 mb-3">
+
+
+                   <RadzenDropDown @bind-Value="SelectedProductIds"
+                        Data="@Products"
+                        TextProperty="@nameof(Product.DisplayNameSize)"
+                        ValueProperty="@nameof(Product.Id)"
+                        FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
+                        Name="DropDownMultipleChips"
+                        AllowFiltering="true"
+                        Multiple="true"
+                        AllowClear="true"
+                        Placeholder="Select products"
+                        SelectAllText="Select All Products"
+                        Chips="true"
+                        Style="width: 100%; max-width: 400px;" />
+
+
+
+    </div>
+
+    <div class="col-md-3 mb-3">
+        <RadzenButton Disabled="@(SelectedProductIds == null || !SelectedProductIds.Any())"
+                      Text="Add"
+                      Style="width:25%"
+                      ButtonStyle="ButtonStyle.Secondary"
+                      Click="AddProducts" />
+    </div>
+
+</div>
+
+
+<div class="card dataForm mt-3 ">
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Product</th>
+                <th>C/B</th>
+                <th>P/D</th>
+                <th>P/Q</th>
+                <th>T/Q</th>
+                <th>U/P</th>
+                <th>Free</th>
+                @*   <th>Dis(%)</th> 
+                <th class="text-end">D/P</th>*@
+                <th class="text-end">Price</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var orderDetail in OrderDetails)
+            {
+                <tr>
+                    <td>
+                        <RadzenDropDown TValue="int"
+                                        @bind-Value="orderDetail.ProductId"
+                                        Data="@AllProducts"
+                                        TextProperty="DisplayNameSize"
+                                        ValueProperty="Id"
+                                        Placeholder="Select a product"
+                                        FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
+                                        AllowFiltering="false"
+                                        Change="@(args => OnProductChanged(orderDetail, args))">
+                            <Template Context="product">
+                                @product.DisplayNameSize)
+                            </Template>
+                        </RadzenDropDown>
+
+                    </td>
+                    <td>
+                        <input type="number" @bind="orderDetail.CartunToPiece" @onblur="(e) => OnUnitChanged(orderDetail)" class="form-control" />
+                    </td>
+                    <td>
+                        <input type="number" @bind="orderDetail.BoxToPiece" @onblur="(e) => OnUnitChanged(orderDetail)" class="form-control" />
+                    </td>
+                    <td>
+                        <input type="number" @bind="orderDetail.Piece" @onblur="(e) => OnUnitChanged(orderDetail)" class="form-control" />
+                    </td>
+                    <td>@orderDetail.Quantity</td>
+                    @* <td class="text-end">৳@orderDetail.UnitofPrice.ToString("N2")</td> *@
+                    <td>
+                        <input type="number" @bind="orderDetail.UnitofPrice" @onblur="(e) => OnUnitChanged(orderDetail)" class="form-control" />
+                    </td>
+
+                    @if (orderDetail.FreeProductOffer != null)
+                    {
+                        @if (orderDetail.FreeProductOffer.BuyQuantity == 1
+                                        && orderDetail.FreeProductOffer.BuyQuantity > 0)
+                        {
+                            <td> @orderDetail.FreeQuantity</td>
+                        }
+                        else
+                        {
+                            <td>
+                                <input type="number" @bind="orderDetail.FreeQuantity" />
+                            </td>
+                        }
+
+                    }
+                    else
+                    {
+                        <td>
+                            <input type="number" @bind="orderDetail.FreeQuantity" />
+                        </td>
+                    }
+
+
+                    @*  <td>
+                        <input type="number" @bind="orderDetail.Discount" @onblur="(e) => OnQuantityChanged(orderDetail)" />
+                    </td>
+                    <td class="text-end">৳@orderDetail.DiscountAmount.ToString("N2")</td> *@
+                    <td class="text-end">৳@orderDetail.Price.ToString("N2")</td>
+                    <td><RadzenButton Icon="delete" title="Delete" ButtonStyle="ButtonStyle.Danger" Click="() => RemoveProduct(orderDetail)" /></td>
+                </tr>
+
+                @if (orderDetail.FreeProductOffer != null
+                            && orderDetail.FreeProductOffer.ProductName is not null
+                            && orderDetail.FreeProductOffer.FreeQuantity > 0
+                            && orderDetail.FreeProductOffer.BuyQuantity > 0)
+                {
+                    <tr>
+                        <td colspan="8">
+                            <strong>Gift Item:</strong> @orderDetail.FreeProductOffer.ProductName
+                            <strong>Buy Quantity: </strong>@orderDetail.FreeProductOffer.BuyQuantity
+                            <strong>Free Quantity:</strong> @orderDetail.FreeProductOffer.FreeQuantity
+                        </td>
+                    </tr>
+                }
+            }
+        </tbody>
+        <tfoot>
+            <tr>
+                <td colspan="6" class="text-end"><strong>Total:</strong></td>
+                @* <td colspan="1" class="text-end"><strong>৳@OrderDetails.Sum(od => od.DiscountAmount).ToString("N2")</strong></td> *@
+                <td colspan="2" class="text-end"><strong>৳@OrderDetails.Sum(od => od.Price).ToString("N2")</strong></td>
+                <td colspan="1"></td>
+            </tr>
+        </tfoot>
+    </table>
+</div>
+
+<div class="card dataForm ">
+    <div class="row m-3 ">
+        <div class="col-md-4 mb-3">
+            <label class="form-label">DSR</label>
+            <RadzenDropDown @bind-Value="Order.CustomerId"
+                            Data="@CustomerList"
+                            TextProperty="Name"
+                            ValueProperty="Id"
+                            Placeholder="Search Customer"
+                            Class="w-100"
+                            AllowFiltering="true"
+                            FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" />
+        </div>
+
+        <div class="col-md-4 mb-3">
+            <label for="deliveryRoad" class="form-label">Delivery Road</label>
+            <div class="select-all-dropdown">
+                <RadzenDropDown @bind-Value="@selectedRoad"
+                                Data="@RoadList"
+                                TextProperty="Name"
+                                ValueProperty="Name"
+                                Placeholder="Search Roads"
+                                FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
+                                AllowFiltering="true"
+                                AllowClear="true"
+                                Multiple="true"
+                                SelectAllText="Select All Roads"
+                                Chips=true
+                                Style="width: 100%;" />
+            </div>
+        </div>
+
+        <div class="col-md-4 mb-3">
+            <label class="form-label">Date</label>
+            <RadzenDatePicker @bind-Value="Order.Date" DateFormat="yyyy-MM-dd" Class="w-100" />
+        </div>
+
+    </div>
+
+
+    <div class="row m-3 ">
+        <hr />
+
+        <div class="row">
+            <div class="col-md-4 mb-3">
+                <label for="totalAmount" class="form-label">Total Amount</label>
+                <input id="totalAmount" type="number" class="form-control" @bind="Order.TotalAmount" readonly />
+            </div>
+            @* <div class="col-md-4 mb-3">
+                <label for="totalDue" class="form-label">Total Pay</label>
+                <input id="totalDue"
+                       type="number"
+                       class="form-control"
+                       @bind-value="Order.TotalPay"
+                       @bind-value:event="oninput"
+                       @onchange="CalculateTotalPay" />
+            </div> *@
+            <div class="col-md-4 mb-3">
+                <label for="totalDue" class="form-label">Total Due</label>
+                <input id="totalDue" type="number" class="form-control" @bind="Order.TotalDue" readonly />
+            </div>
+        </div>
+    </div>
+</div>
+
+<RadzenButton Text="Save" ButtonStyle="ButtonStyle.Primary" Click="SaveOrder" class="mt-2 mb-2" />
+<RadzenButton Text="Cancel" ButtonStyle="ButtonStyle.Secondary" Click="Cancel" Class="m-2" />
+
+
+@code {
+    [Parameter]
+    public int? Id { get; set; }
+
+    [Parameter]
+    public int CustomerId { get; set; }
+
+    [Parameter]
+    public int? OrderId { get; set; }
+
+    public int RoadId { get; set; }
+    public int CategoryId { get; set; }
+
+    public int? SelectedSupplierId { get; set; }
+    public int? SelectedProductId { get; set; }
+    public int? SelectedCategoryId { get; set; }
+
+    // private List<int> SelectedProductIds = new List<int>();
+    //IList<int> SelectedProductIds = new List<int>();
+    private List<int> SelectedProductIds = new List<int>();
+
+    public List<OrderDetailViewModel> OrderDetails { get; set; } = new List<OrderDetailViewModel>();
+    public IEnumerable<Product> Products { get; set; } = new List<Product>();
+    public IEnumerable<Product> AllProducts { get; set; } = new List<Product>();
+
+    public IEnumerable<Lov> SupplierList { get; set; } = new List<Lov>();
+    private IEnumerable<Lov> RoadList { get; set; } = new List<Lov>();
+    private IEnumerable<Lov> PaymentMethodList { get; set; } = new List<Lov>();
+    private IEnumerable<Lov> ShippingMethodList { get; set; } = new List<Lov>();
+    private IEnumerable<Lovd> CustomerList { get; set; } = new List<Lovd>();
+    private IEnumerable<Lov> CategoryList { get; set; } = new List<Lov>();
+
+    List<string> selectedRoad = new();
+
+    public Order Order { get; set; } = new();
+
+    [Inject]
+    private IProduct m_Product { get; set; }
+
+    [Inject]
+    private IOrder m_Order { get; set; }
+
+    [Inject]
+    private IPreOrder m_PreOrder { get; set; }
+
+    [Inject]
+    private ILookup m_Lookup { get; set; }
+
+    [Inject]
+    private NavigationManager _navigationManager { get; set; }
+
+    private Message notificationComponent;
+
+    protected override async Task OnInitializedAsync()
+    {
+        CategoryList = await m_Lookup.GetAllProductCategoryList();
+        RoadList = await m_Lookup.GetAllRoadList();
+        PaymentMethodList = await m_Lookup.GetAllPaymentMethodList();
+        ShippingMethodList = await m_Lookup.GetAllShippingMethodList();
+        SupplierList = await m_Lookup.GetAllSupplierList();
+        var personList = await m_Lookup.GetAllCustomerList();
+        CustomerList = personList.Where(x => x.Desc == "DSR").ToList();
+
+
+        //CategoryList = CategoryList.Where(c => !c.IsDeleted);
+        //RoadList = RoadList.Where(c => !c.IsDeleted);
+        //PaymentMethodList = PaymentMethodList.Where(c => !c.IsDeleted);
+        //ShippingMethodList = ShippingMethodList.Where(c => !c.IsDeleted);
+        //SupplierList = SupplierList.Where(c => !c.IsDeleted);
+        //CustomerList = CustomerList.Where(c => !c.IsDeleted);
+
+        //Products = await m_Product.GetAllProduct();
+
+        AllProducts = await m_Product.GetAllProduct(); 
+        Products = AllProducts;  // Initially show all products
+        Products = Products.Where(x => !x.Supplier.IsDisable);  // Initially show all products
+
+        if (Id.HasValue && Id.Value > 0)
+        {
+            await LoadExistingOrder(Id.Value);
+        }
+        else
+        {
+            Order = new Order
+            {
+                //CustomerId = CustomerList.FirstOrDefault()?.Id ?? 0,
+            };
+        }
+    }
+
+
+    private void ApplyFilters()
+    {
+        IEnumerable<Product> filtered = AllProducts;
+
+        if (SelectedSupplierId.HasValue)
+        {
+            filtered = filtered.Where(p => p.SupplierId == SelectedSupplierId.Value);
+        }
+
+        if (SelectedCategoryId.HasValue)
+        {
+            filtered = filtered.Where(p => p.ProductCategoryId == SelectedCategoryId.Value);
+        }
+
+        Products = filtered.ToList();
+    }
+
+    private void OnSupplierChanged()
+    {
+        ApplyFilters();
+    }
+
+    private void OnCategoryChanged()
+    {
+        ApplyFilters();
+    }
+
+    private void AddProducts()
+    {
+        if (SelectedProductIds == null || !SelectedProductIds.Any())
+        {
+            return; // No products selected
+        }
+
+        foreach (var productId in SelectedProductIds)
+        {
+            if (productId <= 0) continue;
+
+            // Create new order detail with the selected product
+            var newOrderDetail = new OrderDetailViewModel()
+            {
+                ProductId = productId,
+                FreeProductOffer = new FreeProductOfferDTO(),
+            };
+
+            // Initialize product details
+            var selectedProduct = AllProducts.FirstOrDefault(p => p.Id == productId);
+            if (selectedProduct != null)
+            {
+                newOrderDetail.UnitofPrice = selectedProduct.SellingPrice;
+                newOrderDetail.BuyingPrice = selectedProduct.BuyingPrice;
+                newOrderDetail.StockQty = selectedProduct.StockQty;
+
+                // Initialize with default quantity 1
+
+                newOrderDetail.CartunUnit = selectedProduct.CartunToPiece;
+                newOrderDetail.BoxUnit = selectedProduct.BoxToPiece;
+                //newOrderDetail.Piece = 0;
+                newOrderDetail.Quantity = 0;
+
+                newOrderDetail.Price = selectedProduct.SellingPrice * newOrderDetail.Quantity;
+                //newOrderDetail.DiscountAmount = totalPrice * (newOrderDetail.Discount / 100);
+                //newOrderDetail.Price = totalPrice - newOrderDetail.DiscountAmount;
+
+                if (selectedProduct.IsFreeProductOffer)
+                {
+                    newOrderDetail.FreeProductOffer = m_Product.GetProductForFreeOffer(newOrderDetail.ProductId);
+                    if (newOrderDetail.FreeProductOffer?.BuyQuantity == 1)
+                    {
+                        newOrderDetail.FreeQuantity = newOrderDetail.Quantity * newOrderDetail.FreeProductOffer.FreeQuantity;
+                    }
+                }
+            }
+
+            OrderDetails.Add(newOrderDetail);
+        }
+
+        // Clear the selected products
+        SelectedProductIds = new List<int>();
+
+        CalculateTotalPay();
+    }
+
+    private void OnUnitChanged(OrderDetailViewModel detail)
+    {
+        int total = 0;
+
+        if (detail.CartunToPiece.HasValue && detail.CartunUnit.HasValue)
+        {
+            total += detail.CartunToPiece.Value * detail.CartunUnit.Value;
+        }
+
+        if (detail.BoxToPiece.HasValue && detail.BoxUnit.HasValue)
+        {
+            total += detail.BoxToPiece.Value * detail.BoxUnit.Value;
+        }
+
+        if (detail.Piece.HasValue)
+        {
+            total += detail.Piece.Value;
+        }
+
+        detail.Quantity = total;
+
+        // Recalculate everything else (price, discount, etc.)
+        OnQuantityChanged(detail);
+    }
+
+    private void OnProductChanged(OrderDetailViewModel orderDetail, object value)
+    {
+        if (value is int selectedProductId)
+        {
+            orderDetail.ProductId = selectedProductId;
+
+            if (orderDetail.ProductId > 0)
+            {
+                var selectedProduct = AllProducts.FirstOrDefault(p => p.Id == selectedProductId);
+                if (selectedProduct != null)
+                {
+                    orderDetail.UnitofPrice = selectedProduct.SellingPrice;
+                    orderDetail.BuyingPrice = selectedProduct.BuyingPrice;
+                    orderDetail.StockQty = selectedProduct.StockQty;
+
+                    var totalPrice = selectedProduct.SellingPrice * orderDetail.Quantity;
+                    orderDetail.DiscountAmount = totalPrice * (orderDetail.Discount / 100);
+                    orderDetail.Price = totalPrice - orderDetail.DiscountAmount;
+
+                    CalculateTotalPay();
+
+                    if (selectedProduct.IsFreeProductOffer)
+                    {
+                        orderDetail.FreeProductOffer = m_Product.GetProductForFreeOffer(orderDetail.ProductId);
+
+                        if (orderDetail.FreeProductOffer is not null)
+                        {
+                            if (orderDetail.FreeProductOffer.BuyQuantity == 1)
+                            {
+                                orderDetail.FreeQuantity = orderDetail.Quantity;
+                            }
+                        }
+                        else
+                        {
+                            orderDetail.FreeQuantity = 0;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private void OnQuantityChanged(OrderDetailViewModel orderDetail)
+    {
+        if (orderDetail.ProductId <= 0)
+        {
+            return;
+        }
+
+        var selectedProduct = AllProducts.FirstOrDefault(p => p.Id == orderDetail.ProductId);
+        if (selectedProduct.StockQty < orderDetail.Quantity)
+        {
+            notificationComponent.Show("Updated Summary", $"The {selectedProduct.Name} is currently unavailable!", NotificationSeverity.Warning);
+        }
+
+        if (selectedProduct != null)
+        {
+            orderDetail.Price = orderDetail.UnitofPrice * orderDetail.Quantity;
+            //var totalPrice = orderDetail.UnitofPrice * orderDetail.Quantity;
+            // orderDetail.DiscountAmount = totalPrice * (orderDetail.Discount / 100);
+            //orderDetail.Price = totalPrice - orderDetail.DiscountAmount;
+
+            CalculateTotalPay();
+
+            if (selectedProduct.IsFreeProductOffer && orderDetail.FreeProductOffer is not null)
+            {
+                if (orderDetail.FreeProductOffer.BuyQuantity == 1)
+                {
+                    orderDetail.FreeQuantity = orderDetail.Quantity * orderDetail.FreeProductOffer.FreeQuantity;
+                    //orderDetail.FreeQuantity = orderDetail.Quantity;
+                }
+            }
+            else
+            {
+                orderDetail.FreeQuantity = 0;
+            }
+        }
+    }
+
+    private void SaveOrder()
+    {
+
+        if (Order.CustomerId <= 0)
+        {
+            notificationComponent.Show("Error Summary", "Customer is required to save the order.", NotificationSeverity.Warning);
+            return;
+        }
+
+        Order.OrderDetails = OrderDetails.Select(od => new OrderDetail
+        {
+            ProductId = od.ProductId,
+            Quantity = od.Quantity,
+            Discount = od.Discount,
+            FreeQuantity = od.FreeQuantity,
+            UnitPrice = od.UnitofPrice,
+            BuyingPrice = od.BuyingPrice,
+            Price = od.Price
+        }).ToList();
+
+        if (selectedRoad != null && selectedRoad.Count > 0)
+        {
+            Order.SelectedRoad = string.Join(", ", selectedRoad.ToList());
+        }
+        else
+        {
+            Order.SelectedRoad = string.Empty;
+        }
+
+        if (Order.OrderDetails == null || !Order.OrderDetails.Any())
+        {
+            notificationComponent.Show("Empty Order", "You must add at least one product", NotificationSeverity.Warning);
+            return;
+        }
+
+        if (Order.OrderDetails.Any(od => od.ProductId <= 0))
+        {
+            notificationComponent.Show("Invalid Product", "One or more products are not selected", NotificationSeverity.Warning);
+            return;
+        }
+
+
+        if (Order.OrderDetails.Any(od => od.Quantity <= 0))
+        {
+            notificationComponent.Show("Invalid Product", "One or more products are stock quantity zero", NotificationSeverity.Warning);
+            return;
+        }
+
+
+        if (string.IsNullOrEmpty(Order.SelectedRoad))
+        {
+            notificationComponent.Show("Invalid Product", "You must Select at least one Road", NotificationSeverity.Warning);
+            return;
+        }
+
+        foreach (var product in Order.OrderDetails)
+        {
+            var selectedProduct = AllProducts.FirstOrDefault(p => p.Id == product.ProductId);
+            if (selectedProduct.StockQty < product.Quantity)
+            {
+                notificationComponent.Show("Updated Summary", $"The {selectedProduct.Name} is currently unavailable!", NotificationSeverity.Warning);
+                return;
+            }
+        }
+
+
+        if (Order.Id > 0)
+        {
+            m_Order.UpdateOrder(Order);
+            notificationComponent.Show("Updated Summary", "Order has been Updated successfully", NotificationSeverity.Warning);
+        }
+        else
+        {
+            m_Order.CreateOrder(Order);
+            notificationComponent.Show("Added Summary", "Order has been Added successfully", NotificationSeverity.Success);
+        }
+
+        _navigationManager.NavigateTo($"/Sales");
+    }
+
+    // private void SaveOrderToDatabase(Order order)
+    // {
+    //     m_Order.CreateOrder(order);
+    // }
+
+    private void CalculateTotalPay()
+    {
+        Order.TotalAmount = OrderDetails.Sum(od => od.Price) + Order.DeliveryCharge;
+        Order.TotalDue = Order.TotalAmount - (Order.TotalPay + Order.Discount);
+    }
+
+    private async Task LoadExistingOrder(int orderId)
+    {
+        var existingOrder = await m_Order.GetOrderById(orderId);
+
+        if (existingOrder != null)
+        {
+            if (!string.IsNullOrEmpty(existingOrder.SelectedRoad))
+            {
+                selectedRoad = existingOrder.SelectedRoad
+                                .Split(",")
+                                .Select(x => x.Trim())
+                                .ToList();
+            }
+
+            Order = existingOrder;
+
+            OrderDetails = existingOrder.OrderDetails.Select(od =>
+            {
+                var product = m_Product.GetProduct(od.ProductId);
+                var freeOffer = m_Product.GetProductForFreeOffer(od.ProductId);
+
+                var totalPrice = product.SellingPrice * od.Quantity;
+                var freeQty = 0;
+
+                if (freeOffer != null && freeOffer.BuyQuantity > 0)
+                {
+                    freeQty = (od.Quantity / freeOffer.BuyQuantity) * freeOffer.FreeQuantity;
+                }
+
+                var orderDetail = new OrderDetailViewModel
+                {
+                    FreeProductOffer = freeOffer,
+                    ProductId = od.ProductId,
+                    FreeQuantity = freeQty,
+                    Quantity = od.Quantity,
+                    Price = od.Price,
+                    StockQty = product.StockQty,
+                    UnitofPrice = od.UnitPrice,
+                    BuyingPrice = od.BuyingPrice,
+                    Discount = od.Discount,
+                    DiscountAmount = totalPrice * (od.Discount / 100),
+                    BoxUnit = product.BoxToPiece,
+                    CartunUnit = product.CartunToPiece
+                };
+
+                // Calculate packaging quantities from total quantity
+                CalculatePackagingQuantities(orderDetail);
+
+                return orderDetail;
+            }).ToList();
+
+            CalculateTotalPay();
+        }
+    }
+
+    // Add this method to handle the reverse calculation (total quantity → packaging units)
+    private void CalculatePackagingQuantities(OrderDetailViewModel detail)
+    {
+        int remainingQuantity = detail.Quantity;
+
+        if (detail.CartunUnit.HasValue && detail.CartunUnit.Value > 0)
+        {
+            detail.CartunToPiece = remainingQuantity / detail.CartunUnit.Value;
+            remainingQuantity %= detail.CartunUnit.Value;
+        }
+        else
+        {
+            detail.CartunToPiece = null;
+        }
+
+        if (detail.BoxUnit.HasValue && detail.BoxUnit.Value > 0)
+        {
+            detail.BoxToPiece = remainingQuantity / detail.BoxUnit.Value;
+            remainingQuantity %= detail.BoxUnit.Value;
+        }
+        else
+        {
+            detail.BoxToPiece = null;
+        }
+
+        detail.Piece = remainingQuantity > 0 ? remainingQuantity : null;
+    }
+
+    private void OnRoadChanged(IEnumerable<string> newSelection)
+    {
+        selectedRoad = newSelection.ToList();
+    }
+
+    private void RemoveProduct(OrderDetailViewModel orderDetail)
+    {
+        OrderDetails.Remove(orderDetail);
+        CalculateTotalPay();
+    }
+
+    private void Cancel()
+    {
+        _navigationManager.NavigateTo($"/Sales");
+    }
+}

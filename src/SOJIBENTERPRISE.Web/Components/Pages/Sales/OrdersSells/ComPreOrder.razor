@@ -1,0 +1,433 @@
+﻿@page "/Order"
+@page "/Order/{Id:int}"
+
+@rendermode @(new InteractiveServerRenderMode(prerender: false))
+@inject NotificationService NotificationService
+
+<Message @ref="notificationComponent" />
+
+<style>
+    .dataForm .table {
+        table-layout: fixed; /* Ensures column widths are respected */
+        width: 100%; /* Ensures the table takes up the full width */
+    }
+
+        .dataForm .table th,
+        .dataForm .table td {
+            padding: 6px; /* Adjusts general padding */
+        }
+
+            /* Column Widths */
+            .dataForm .table th:nth-child(1), /* Product */
+            .dataForm .table td:nth-child(1) {
+                width: 40%; /* Expand the first column */
+            }
+
+            .dataForm .table th:nth-child(2), /* Unit of Price */
+            .dataForm .table td:nth-child(2) {
+                width: 8%;
+            }
+
+            .dataForm .table th:nth-child(3), /* Qty */
+            .dataForm .table td:nth-child(3) {
+                width: 8%;
+            }
+
+            .dataForm .table th:nth-child(4), /* Free (%) */
+            .dataForm .table td:nth-child(4) {
+                width: 8%; /* Explicit width for Free column */
+            }
+
+            .dataForm .table th:nth-child(5), /* Discount (%) */
+            .dataForm .table td:nth-child(5) {
+                width: 8%; /* Explicit width for Discount column */
+            }
+
+            .dataForm .table th:nth-child(6), /* Discount Price */
+            .dataForm .table td:nth-child(6) {
+                width: 10%; /* Explicit width for Discount Price column */
+            }
+
+            .dataForm .table th:nth-child(7), /* Price */
+            .dataForm .table td:nth-child(7) {
+                width: 12%;
+            }
+
+            .dataForm .table th:nth-child(8), /* Action */
+            .dataForm .table td:nth-child(8) {
+                width: 6%;
+            }
+
+            /* Align Price column to the right */
+            .dataForm .table td:nth-child(6),
+            .dataForm .table tfoot td:nth-child(3) {
+                text-align: right;
+            }
+
+        /* Ensure input elements respect column width */
+        .dataForm .table input {
+            width: 100%; /* Make input elements fill the column width */
+            box-sizing: border-box; /* Include padding and border in the width */
+        }
+</style>
+
+<h3>Product Order Entry</h3>
+
+<div class="card dataForm mt-3 ">
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Product</th>
+                <th class="text-end">Unit P</th>
+                <th>Qty</th>
+                <th>Free</th>
+                <th>Dis(%)</th>
+                <th class="text-end">Dis P</th>
+                <th class="text-end">Price</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var orderDetail in OrderDetails)
+            {
+                <tr>
+                    <td>
+                        <RadzenDropDown TValue="int"
+                                        @bind-Value="orderDetail.ProductId"
+                                        Data="@Products"
+                                        TextProperty="Name"
+                                        ValueProperty="Id"
+                                        Placeholder="Select a product"
+                                        FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
+                                        AllowFiltering="false"
+                                        Change="@(args => OnProductChanged(orderDetail, args))">
+                            <Template Context="product">
+                                @product.Name (@product.ProductsSize.Name)
+                            </Template>
+                        </RadzenDropDown>
+
+                    </td>
+                    
+                    <td class="text-end">৳@orderDetail.UnitofPrice.ToString("N2")</td>
+                    <td>
+                        <input type="number" @bind="orderDetail.Quantity" @onblur="(e) => OnQuantityChanged(orderDetail)" />
+                    </td>
+                    <td>@orderDetail.FreeQuantity</td>
+                    <td>
+                        <input type="number" @bind="orderDetail.Discount" @onblur="(e) => OnQuantityChanged(orderDetail)" />
+                    </td>
+                    <td class="text-end">৳@orderDetail.DiscountAmount.ToString("N2")</td>
+                    <td class="text-end">৳@orderDetail.Price.ToString("N2")</td>
+                    <td><RadzenButton Icon="delete" title="Delete" ButtonStyle="ButtonStyle.Danger" Click="() => RemoveProduct(orderDetail)" /></td>
+                </tr>
+
+                @if (orderDetail.FreeProductOffer != null)
+                {
+                    <tr>
+                        <td colspan="8">
+                            <strong>Gift Item:</strong> @orderDetail.FreeProductOffer.ProductName
+                            <strong>Buy Quantity: </strong>@orderDetail.FreeProductOffer.BuyQuantity
+                            <strong>Free Quantity:</strong> @orderDetail.FreeProductOffer.FreeQuantity
+                        </td>
+                    </tr>
+                }
+            }
+        </tbody>
+        <tfoot>
+            <tr>
+                <td colspan="5" class="text-end"><strong>Total:</strong></td>
+                <td colspan="1" class="text-end"><strong>৳@OrderDetails.Sum(od => od.DiscountAmount).ToString("N2")</strong></td>
+                <td colspan="1" class="text-end"><strong>৳@OrderDetails.Sum(od => od.Price).ToString("N2")</strong></td>
+            </tr>
+        </tfoot>
+    </table>
+
+    <RadzenButton Text="Add Product" ButtonStyle="ButtonStyle.Secondary" Click="AddProduct" />
+
+</div>
+
+<hr />
+
+<div class="card dataForm ">
+    <div class="row m-3 ">
+        <div class="col-md-4 mb-3">
+            <label class="form-label">Customer</label>
+            <RadzenDropDown @bind-Value="Order.CustomerId"
+                            Data="@CustomerList"
+                            TextProperty="Name"
+                            ValueProperty="Id"
+                            Placeholder="Select Customer"
+                            Class="w-100"
+                            AllowFiltering="false"
+                            FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" />
+
+        </div>
+        <div class="col-md-4 mb-3">
+            <label for="deliveryCharge" class="form-label">Delivery Charge</label>
+            <input id="deliveryCharge" type="number" class="form-control" @bind="Order.DeliveryCharge" @onblur="(e) => OnDeliveryChargeChanged()" />
+        </div>
+
+        <div class="col-md-4 mb-3">
+            <label for="discount" class="form-label">Discount</label>
+            <input id="discount" type="number" class="form-control" @bind="Order.Discount" @onblur="(e) => OnTotalPayChanged()" />
+        </div>
+
+        <div class="col-md-4 mb-3">
+            <label for="totalPay" class="form-label">Total Pay</label>
+            <input id="totalPay" type="number" class="form-control" @bind="Order.TotalPay" @onblur="(e) => OnTotalPayChanged()" />
+        </div>
+
+        <hr />
+
+        <div class="row">
+            <div class="col-md-4 mb-3">
+                <label for="totalAmount" class="form-label">Total Amount</label>
+                <input id="totalAmount" type="number" class="form-control" @bind="Order.TotalAmount" readonly />
+            </div>
+            <div class="col-md-4 mb-3">
+                <label for="totalDue" class="form-label">Total Due</label>
+                <input id="totalDue" type="number" class="form-control" @bind="Order.TotalDue" readonly />
+            </div>
+        </div>
+    </div>
+</div>
+
+<RadzenButton Text="Save" ButtonStyle="ButtonStyle.Primary" Click="SaveOrder" class="mt-2 mb-2" />
+<RadzenButton Text="Cancel" ButtonStyle="ButtonStyle.Secondary" Click="Cancel" Class="m-2" />
+
+@code {
+    [Parameter]
+    public int Id { get; set; }
+
+    [Inject]
+    private IProduct m_Product { get; set; }
+
+    [Inject]
+    private IOrder m_Order { get; set; }
+
+    [Inject]
+    private IPreOrder m_PreOrder { get; set; }
+
+    [Inject]
+    private ILookup m_Lookup { get; set; }
+
+    [Inject]
+    private NavigationManager _navigationManager { get; set; }
+
+
+    public List<PreOrderDetailViewModel> OrderDetails { get; set; } = new List<PreOrderDetailViewModel>();
+    public IEnumerable<Product> Products { get; set; } = new List<Product>();
+    private IEnumerable<Lovd> CustomerList { get; set; } = new List<Lovd>();
+    public PreOrder Order { get; set; } = new();
+
+
+
+    private Message notificationComponent;
+
+    protected override async Task OnInitializedAsync()
+    {
+        CustomerList = await m_Lookup.GetAllCustomerList();
+
+        if (Id > 0)
+        {
+            await LoadExistingOrder(Id);
+        }
+        else
+        {
+            Order = new PreOrder
+                {
+                    Date = DateTime.Now,
+                    CustomerId = CustomerList.FirstOrDefault()?.Id ?? 0,
+                };
+        }
+
+        await LoadProducts();
+    }
+
+    private void AddProduct()
+    {
+        OrderDetails.Add(new PreOrderDetailViewModel());
+        CalculateTotalPay();
+    }
+
+    private void RemoveProduct(PreOrderDetailViewModel orderDetail)
+    {
+        OrderDetails.Remove(orderDetail);
+        CalculateTotalPay();
+    }
+
+    private void OnProductChanged(PreOrderDetailViewModel orderDetail, object value)
+    {
+        if (value is int selectedProductId)
+        {
+            orderDetail.ProductId = selectedProductId;
+
+            if (orderDetail.ProductId > 0)
+            {
+                var selectedProduct = Products.FirstOrDefault(p => p.Id == selectedProductId);
+                if (selectedProduct != null)
+                {
+                    orderDetail.UnitofPrice = selectedProduct.SellingPrice;
+
+                    var totalPrice = selectedProduct.SellingPrice * orderDetail.Quantity;
+                    orderDetail.DiscountAmount = totalPrice * (orderDetail.Discount / 100);
+                    orderDetail.Price = totalPrice - orderDetail.DiscountAmount;
+
+                    CalculateTotalPay();
+
+                    if (selectedProduct.IsFreeProductOffer)
+                    {
+                        orderDetail.FreeProductOffer = m_Product.GetProductForFreeOffer(orderDetail.ProductId);
+                        
+                        if (orderDetail.FreeProductOffer is not null)
+                        {
+                            orderDetail.FreeQuantity = orderDetail.Quantity / orderDetail.FreeProductOffer.BuyQuantity;
+                        }
+                        else
+                        {
+                            orderDetail.FreeQuantity = 0;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private void OnQuantityChanged(PreOrderDetailViewModel orderDetail)
+    {
+        if (orderDetail.ProductId <= 0)
+        {
+            return;
+        }
+
+        var selectedProduct = Products.FirstOrDefault(p => p.Id == orderDetail.ProductId);
+        if (selectedProduct.StockQty <= orderDetail.Quantity)
+        {
+            notificationComponent.Show("Updated Summary", $"The {selectedProduct.Name} is currently unavailable!", NotificationSeverity.Warning);
+        }
+
+        if (selectedProduct != null)
+        {
+            var totalPrice = selectedProduct.SellingPrice * orderDetail.Quantity;
+            orderDetail.DiscountAmount = totalPrice * (orderDetail.Discount / 100);
+            orderDetail.Price = totalPrice - orderDetail.DiscountAmount;
+
+            CalculateTotalPay();
+
+            if (selectedProduct.IsFreeProductOffer && orderDetail.FreeProductOffer is not null)
+            {
+                orderDetail.FreeQuantity = orderDetail.Quantity / orderDetail.FreeProductOffer.BuyQuantity;
+            }
+            else
+            {
+                orderDetail.FreeQuantity = 0;
+            }
+        }
+    }
+
+    private void OnDeliveryChargeChanged()
+    {
+        CalculateTotalPay();
+    }
+
+    private void OnTotalPayChanged()
+    {
+        CalculateTotalPay();
+    }
+
+    private void SaveOrder()
+    {
+        Order.PreOrderDetails = OrderDetails.Select(od => new PreOrderDetails
+            {
+                ProductId = od.ProductId,
+                Quantity = od.Quantity,
+                Discount = od.Discount,
+                Price = od.Price
+            }).ToList();
+
+
+        if (Order.PreOrderDetails == null || !Order.PreOrderDetails.Any())
+        {
+            notificationComponent.Show("Empty Order", "You must add at least one product", NotificationSeverity.Warning);
+            return;
+        }
+
+        if (Order.PreOrderDetails.Any(od => od.ProductId <= 0))
+        {
+            notificationComponent.Show("Invalid Product", "One or more products are not selected", NotificationSeverity.Warning);
+            return;
+        }
+
+        if (Order.Id > 0)
+        {
+            m_PreOrder.UpdatePreOrder(Order);
+            notificationComponent.Show("Updated Summary", "Order has been Updated successfully", NotificationSeverity.Warning);
+        }
+        else
+        {
+            SaveOrderToDatabase(Order);
+            notificationComponent.Show("Added Summary", "Order has been Added successfully", NotificationSeverity.Success);
+        }
+
+        _navigationManager.NavigateTo($"/Orders");
+    }
+
+    private async Task LoadProducts()
+    {
+        Products = await m_Product.GetAllProduct();
+    }
+
+    private void SaveOrderToDatabase(PreOrder order)
+    {
+        m_PreOrder.CreatePreOrder(order);
+    }
+
+    private void CalculateTotalPay()
+    {
+        Order.TotalAmount = OrderDetails.Sum(od => od.Price) + Order.DeliveryCharge;
+        Order.TotalDue = Order.TotalAmount - Order.TotalPay - Order.Discount;
+    }
+
+    private async Task LoadExistingOrder(int orderId)
+    {
+        var existingOrder = await m_PreOrder.GetPreOrderById(orderId);
+
+        if (existingOrder != null)
+        {
+            Order = existingOrder;
+
+            OrderDetails = existingOrder.PreOrderDetails.Select(od =>
+            {
+                var product = m_Product.GetProduct(od.ProductId);
+                var freeOffer = m_Product.GetProductForFreeOffer(od.ProductId);
+                var freeQty = 0;
+
+                if (freeOffer != null && freeOffer.BuyQuantity > 0)
+                {
+                    freeQty = (od.Quantity / freeOffer.BuyQuantity) * freeOffer.FreeQuantity;
+                }
+
+                var totalPrice = product.SellingPrice * od.Quantity;
+
+                return new PreOrderDetailViewModel
+                    {
+                        ProductId = od.ProductId,
+                        Quantity = od.Quantity,
+                        Price = od.Price,
+                        UnitofPrice = product.SellingPrice,
+                        FreeQuantity = freeQty,
+                        FreeProductOffer = freeOffer,
+                        Discount = od.Discount,
+                        DiscountAmount = totalPrice * (od.Discount / 100),
+                    };
+            }).ToList();
+
+            CalculateTotalPay();
+        }
+    }
+
+    private void Cancel()
+    {
+        _navigationManager.NavigateTo($"/Orders");
+    }
+}

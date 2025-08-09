@@ -1,0 +1,432 @@
+﻿@page "/CustomerProductReturn"
+@page "/CustomerProductReturn/{Id:int}"
+@page "/CustomerProductReturn/{Id:int}/{OrderId:int}"
+
+@rendermode @(new InteractiveServerRenderMode(prerender: false))
+
+<Message @ref="notificationComponent" />
+
+<style>
+    .dataForm .table {
+        table-layout: fixed; /* Ensures column widths are respected */
+        width: 100%; /* Ensures the table takes up the full width */
+    }
+
+        .dataForm .table th,
+        .dataForm .table td {
+            padding: 6px; /* Adjusts general padding */
+        }
+
+            /* Column Widths */
+            .dataForm .table th:nth-child(1), /* Product */
+            .dataForm .table td:nth-child(1) {
+                width: 15%; /* Expand the first column */
+            }
+
+            .dataForm .table th:nth-child(2), /* T Qty  */
+            .dataForm .table td:nth-child(2) {
+                width: 6%;
+            }
+
+            .dataForm .table th:nth-child(3), /* B Qty */
+            .dataForm .table td:nth-child(3) {
+                width: 8%;
+            }
+
+            .dataForm .table th:nth-child(4), /* D Qty */
+            .dataForm .table td:nth-child(4) {
+                width: 8%;
+            }
+
+            .dataForm .table th:nth-child(5), /*P Qty */
+            .dataForm .table td:nth-child(5) {
+                width: 8%;
+            }
+
+            .dataForm .table th:nth-child(6), /* R Qty */
+            .dataForm .table td:nth-child(6) {
+                width: 6%;
+            }
+
+            .dataForm .table th:nth-child(7), /* F Qty */
+            .dataForm .table td:nth-child(7) {
+                width: 6%;
+            }
+
+            .dataForm .table th:nth-child(8), /* U P */
+            .dataForm .table td:nth-child(8) {
+                width: 6%;
+            }
+
+
+            .dataForm .table th:nth-child(9), /* R P */
+            .dataForm .table td:nth-child(9) {
+                width: 8%;
+            }
+
+            .dataForm .table th:nth-child(10), /* Price */
+            .dataForm .table td:nth-child(10) {
+                width: 12%;
+            }
+
+            /* Align Price column to the right */
+            .dataForm .table td:nth-child(6),
+            .dataForm .table tfoot td:nth-child(3) {
+                text-align: right;
+            }
+
+        /* Ensure input elements respect column width */
+        .dataForm .table input {
+            width: 100%; /* Make input elements fill the column width */
+            box-sizing: border-box; /* Include padding and border in the width */
+        }
+</style>
+
+<h3>Sales Return Entry</h3>
+
+<div class="card dataForm mt-3 ">
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Product</th>
+                <th>T Qty</th>
+                <th>C/B</th>
+                <th>P/D</th>
+                <th>P/Q</th>
+                <th class="text-center">R/Q</th>
+                <th>F/Q</th>
+                <th class="text-center">U/P</th>
+                @* <th class="text-end">D A</th> *@
+                <th class="text-end">R/P</th>
+                <th class="text-end">Price</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var orderDetail in ReturnOrderDetails)
+            {
+                var selectedProduct = Products.FirstOrDefault(p => p.Id == orderDetail.ProductId);
+
+                if (selectedProduct != null)
+                {
+                    var totalPrice = selectedProduct.SellingPrice * orderDetail.ReturnQuantity;
+                    orderDetail.DiscountAmount = totalPrice * (orderDetail.Discount / 100);
+                    orderDetail.Product = selectedProduct.DisplayNameSize;
+
+                }
+
+                <tr>
+                    <td>@orderDetail.Product</td>
+                    <td>@orderDetail.Quantity</td>
+                    <td>
+                        <input type="number" @bind="orderDetail.CartunToPiece" @onblur="(e) => OnUnitChanged(orderDetail)" class="form-control" />
+                    </td>
+                    <td>
+                        <input type="number" @bind="orderDetail.BoxToPiece" @onblur="(e) => OnUnitChanged(orderDetail)" class="form-control" />
+                    </td>
+                    <td>
+                        <input type="number" @bind="orderDetail.Piece" @onblur="(e) => OnUnitChanged(orderDetail)" class="form-control" />
+                    </td>
+                    <td class="text-center">@orderDetail.ReturnQuantity</td>
+                    @* <td>
+                        <input type="number" @bind="orderDetail.ReturnQuantity" @onblur="(e) => OnQuantityChanged(orderDetail)" />
+                    </td> *@
+
+                    @if (orderDetail.FreeProductOffer is not null)
+                    {
+                        @if (orderDetail.FreeProductOffer.BuyQuantity == 1
+                                        && orderDetail.FreeProductOffer.BuyQuantity > 0)
+                        {
+                            <td class="text-center">@orderDetail.FreeQuantity</td>
+                        }
+                        else
+                        {
+                            <td>
+                                <input type="number" @bind="orderDetail.FreeQuantity" />
+                            </td>
+                        }
+                    }
+                    else
+                    {
+                        <td>
+                            <input type="number" @bind="orderDetail.FreeQuantity" />
+                        </td>
+                    }
+
+                    <td class="text-center">৳@orderDetail.UnitofPrice.ToString("N2")</td>
+                    @* <td class="text-center">@orderDetail.Discount</td> *@
+                    @* <td class="text-end">৳@orderDetail.DiscountAmount.ToString("N2")</td> *@
+                    <td class="text-end">৳@orderDetail.ReturnPrice.ToString("N2")</td>
+                    <td class="text-end">৳@orderDetail.Price.ToString("N2")</td>
+                </tr>
+
+                @if (orderDetail.FreeProductOffer != null && orderDetail.FreeProductOffer.BuyQuantity > 0)
+                {
+                    <tr>
+                        <td colspan="8">
+                            <strong>Gift Item:</strong> @orderDetail.FreeProductOffer.ProductName
+                            <strong>Buy Quantity: </strong>@orderDetail.FreeProductOffer.BuyQuantity
+                            <strong>Free Quantity:</strong> @orderDetail.FreeProductOffer.FreeQuantity
+                        </td>
+                    </tr>
+                }
+            }
+        </tbody>
+        <tfoot>
+            <tr>
+                <td colspan="8" class="text-end"><strong>Total Price:</strong></td>
+                <td colspan="1" class="text-end"><strong>৳@ReturnOrderDetails.Sum(od => od.ReturnPrice).ToString("N2")</strong></td>
+                <td colspan="1" class="text-end"><strong>৳@ReturnOrderDetails.Sum(od => od.Price).ToString("N2")</strong></td>
+            </tr>
+        </tfoot>
+    </table>
+</div>
+
+<RadzenButton Text="Save" ButtonStyle="ButtonStyle.Primary" Click="SaveOrder" class="mt-2 mb-2" />
+<RadzenButton Text="Cancel" ButtonStyle="ButtonStyle.Secondary" Click="CloseModal" Class="m-2" />
+
+@code {
+    [Parameter]
+    public int? Id { get; set; }
+
+    [Parameter]
+    public int OrderId { get; set; }
+
+    public List<ReturnOrderDetailViewModel> ReturnOrderDetails { get; set; } = new List<ReturnOrderDetailViewModel>();
+    public IEnumerable<Product> Products { get; set; } = new List<Product>();
+    public CustomerProductReturn CustomerProductReturn { get; set; } = new();
+
+    [Inject]
+    private ILookup m_Lookup { get; set; }
+
+    [Inject]
+    private IProduct m_Product { get; set; }
+
+    [Inject]
+    private IProductReturn m_ProductReturn { get; set; }
+
+    [Inject]
+    private NavigationManager _navigationManager { get; set; }
+
+    private Message notificationComponent;
+    private bool IsMaxReturn = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        Products = await m_Product.GetAllProduct();
+
+        if (Id.HasValue && Id.Value > 0 || OrderId > 0)
+        {
+            await LoadExistingOrder(OrderId, Id.Value);
+        }
+        else
+        {
+            CustomerProductReturn = new CustomerProductReturn
+            {
+                Date = m_Lookup.GetOrderDate(OrderId),
+                OrderId = OrderId,
+            };
+        }
+    }
+
+    private void OnUnitChanged(ReturnOrderDetailViewModel detail)
+    {
+        int total = 0;
+
+        if (detail.CartunToPiece.HasValue && detail.CartunUnit.HasValue)
+        {
+            total += detail.CartunToPiece.Value * detail.CartunUnit.Value;
+        }
+
+        if (detail.BoxToPiece.HasValue && detail.BoxUnit.HasValue)
+        {
+            total += detail.BoxToPiece.Value * detail.BoxUnit.Value;
+        }
+
+        if (detail.Piece.HasValue)
+        {
+            total += detail.Piece.Value;
+        }
+
+        detail.ReturnQuantity = total;
+
+        // Recalculate everything else (price, discount, etc.)
+        OnQuantityChanged(detail);
+    }
+
+    private void OnQuantityChanged(ReturnOrderDetailViewModel orderDetail)
+    {
+        if (orderDetail == null || orderDetail.ProductId <= 0)
+        {
+            return;
+        }
+
+        if (orderDetail.Quantity < orderDetail.ReturnQuantity)
+        {
+            string errorMessage = $"The entered quantity exceeds the sales quantity!";
+            notificationComponent.Show("Unavailable Product", errorMessage, NotificationSeverity.Warning);
+        }
+
+        var selectedProduct = Products?.FirstOrDefault(p => p.Id == orderDetail.ProductId);
+
+        if (selectedProduct != null)
+        {
+            orderDetail.ReturnPrice = orderDetail.UnitofPrice * orderDetail.ReturnQuantity;
+            //var totalPrice = selectedProduct.SellingPrice * orderDetail.ReturnQuantity;
+            //var returnQuantityWithPrice = totalPrice * (orderDetail.Discount / 100);
+            //orderDetail.ReturnPrice = totalPrice - returnQuantityWithPrice;
+        }
+
+        CalculateTotalPay();
+
+        if (selectedProduct.IsFreeProductOffer && orderDetail.FreeProductOffer is not null)
+        {
+            if (orderDetail.FreeProductOffer.BuyQuantity == 1)
+            {
+                orderDetail.FreeQuantity = orderDetail.Quantity * orderDetail.FreeProductOffer.FreeQuantity;
+            }
+        }
+        else
+        {
+            orderDetail.FreeQuantity = 0;
+        }
+    }
+
+    private void SaveOrder()
+    {
+        if (CustomerProductReturn.CustomerId <= 0)
+        {
+            Console.WriteLine("CustomerId is required to save the order.");
+            return;
+        }
+
+        IsMaxReturn = ReturnOrderDetails.Any(x => x.Quantity < x.ReturnQuantity);
+
+        if (IsMaxReturn)
+        {
+            string errorMessage = $"The entered quantity exceeds the sales quantity.";
+            notificationComponent.Show("Unavailable Product", errorMessage, NotificationSeverity.Warning);
+            return;
+        }
+        else
+        {
+
+            CustomerProductReturn.CustomerProductReturnDetails = ReturnOrderDetails.Select(od => new CustomerProductReturnDetails
+            {
+                Id = od.Id,
+                CustomerProductReturnId = CustomerProductReturn.Id,
+                ProductId = od.ProductId,
+                Quantity = od.Quantity,
+                UnitPrice = od.UnitofPrice,
+                FreeQuantity = od.FreeQuantity,
+                ReturnQuantity = od.ReturnQuantity,
+                Discount = od.Discount,
+                ReturnPrice = od.ReturnPrice,
+                Price = od.Price
+            }).ToList();
+
+            if (CustomerProductReturn.Id > 0)
+            {
+                m_ProductReturn.UpdateCustomerProductReturn(CustomerProductReturn);
+                notificationComponent.Show("Updated Summary", "Customer Product Return has been Updated successfully", NotificationSeverity.Warning);
+            }
+            else
+            {
+                m_ProductReturn.CreateCustomerProductReturn(CustomerProductReturn);
+                notificationComponent.Show("Added Summary", "Customer Product Return has been Added successfully", NotificationSeverity.Success);
+            }
+        }
+
+        _navigationManager.NavigateTo($"/Sales");
+    }
+
+    private async Task LoadExistingOrder(int orderId, int id)
+    {
+        if (id > 0)
+        {
+            CustomerProductReturn = await m_ProductReturn.GetCustomerProductReturnById(id);
+        }
+        else
+        {
+            CustomerProductReturn = await m_ProductReturn.GetExistingCustomerProductReturnByOrderId(orderId);
+
+            if (CustomerProductReturn is null)
+            {
+                CustomerProductReturn = await m_ProductReturn.GetCustomerProductReturnByOrderId(orderId);
+            }
+        }
+
+        if (CustomerProductReturn != null)
+        {
+            ReturnOrderDetails = CustomerProductReturn.CustomerProductReturnDetails.Select(od =>
+            {
+                var product = Products.FirstOrDefault(x => x.Id == od.ProductId);
+                var freeOffer = m_Product.GetProductForFreeOffer(od.ProductId);
+
+                var returnOrderDetail = new ReturnOrderDetailViewModel
+                {
+                    Id = od.Id,
+                    ProductId = od.ProductId,
+                    Product = product?.Name ?? string.Empty,
+                    Quantity = od.Quantity,
+                    UnitofPrice = od.UnitPrice,
+                    ReturnQuantity = od.ReturnQuantity,
+                    FreeQuantity = od.FreeQuantity,
+                    Price = od.Price,
+                    ReturnPrice = od.ReturnPrice,
+                    Discount = od.Discount,
+                    FreeProductOffer = freeOffer,
+                    BoxUnit = product?.BoxToPiece,
+                    CartunUnit = product?.CartunToPiece,
+                };
+
+                // Calculate packaging quantities from return quantity
+                CalculateReturnPackagingQuantities(returnOrderDetail);
+
+                return returnOrderDetail;
+            }).ToList();
+
+            CalculateTotalPay();
+        }
+    }
+
+    private void CalculateReturnPackagingQuantities(ReturnOrderDetailViewModel detail)
+    {
+        int remainingQuantity = detail.ReturnQuantity;
+
+        if (detail.CartunUnit.HasValue && detail.CartunUnit.Value > 0)
+        {
+            //detail.CartunToPiece = remainingQuantity / detail.CartunUnit.Value;
+            var result = remainingQuantity / detail.CartunUnit.Value;
+            detail.CartunToPiece = result == 0 ? null : result;
+            remainingQuantity %= detail.CartunUnit.Value;
+        }
+        else
+        {
+            detail.CartunToPiece = null;
+        }
+
+        if (detail.BoxUnit.HasValue && detail.BoxUnit.Value > 0)
+        {
+            var result = remainingQuantity / detail.BoxUnit.Value;
+            detail.BoxToPiece = result == 0 ? null : result;
+            //detail.BoxToPiece = remainingQuantity / detail.BoxUnit.Value;
+            remainingQuantity %= detail.BoxUnit.Value;
+        }
+        else
+        {
+            detail.BoxToPiece = null;
+        }
+
+        detail.Piece = remainingQuantity > 0 ? remainingQuantity : null;
+    }
+
+    private void CalculateTotalPay()
+    {
+        CustomerProductReturn.TotalAmount = ReturnOrderDetails.Sum(od => od.ReturnPrice);
+    }
+
+    private void CloseModal()
+    {
+        _navigationManager.NavigateTo($"/Sales");
+    }
+}

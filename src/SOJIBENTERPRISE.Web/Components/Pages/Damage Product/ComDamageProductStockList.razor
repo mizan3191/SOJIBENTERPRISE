@@ -1,0 +1,204 @@
+﻿@page "/DamageProductStockList/{SupplierId:int}"
+
+@rendermode @(new InteractiveServerRenderMode(prerender: false))
+
+<Message @ref="notificationComponent" />
+<h3>Damage  Product Stock List </h3>
+
+@if (DamageProductList == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <div class="card-body p-0">
+        <div class="d-flex align-items-center mb-3" style="width: 100%;">
+
+            <!-- Search Box -->
+            <div class="d-flex align-items-center border rounded me-3" style="width: fit-content;">
+                <!-- Search Icon -->
+                <span class="ps-2" style="font-size: 1.2rem; color: #6c757d;">
+                    <i class="fas fa-search"></i>
+                </span>
+
+                <!-- Search Text Box -->
+                <RadzenTextBox @bind-Value="@search" TValue="string" Placeholder="Search..." @oninput="OnSearch"
+                               Style="border: none; box-shadow: none; padding-left: 0.5rem;" />
+            </div>
+
+            <!-- Export Button -->
+            <div class="d-flex align-items-center border rounded me-3" style="width: fit-content;">
+                <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="1rem;" Wrap="FlexWrap.Wrap" Style="padding-left: 0.10rem;">
+                    <RadzenButton Text="Export To PDF" Icon="picture_as_pdf" Click="@(args => ExportToPdf())" />
+                </RadzenStack>
+            </div>
+
+        </div>
+        <RadzenDataGrid Data="@FilterDamageProductList" TItem="DamageProductSummaryDTO" PageSize="10" AllowPaging="true" AllowSorting="true" AllowFiltering="false">
+            <Columns>
+                <RadzenDataGridColumn TItem="DamageProductSummaryDTO" Property="@nameof(DamageProductSummaryDTO.SupplierName)" Title="Supplier Name" Width="200px" />
+                <RadzenDataGridColumn TItem="DamageProductSummaryDTO" Property="@nameof(DamageProductSummaryDTO.ProductName)" Title="Product Name" Width="200px" />
+                <RadzenDataGridColumn TItem="DamageProductSummaryDTO" Title="Quantity" Width="100px">
+                    <Template Context="item">
+                        <div>@item.TotalQuantity</div>
+                    </Template>
+                    <FooterTemplate>
+                        <div class="fw-bold">@FilterDamageProductList.Sum(o => o.TotalQuantity)</div>
+                    </FooterTemplate>
+                </RadzenDataGridColumn>
+                <RadzenDataGridColumn TItem="DamageProductSummaryDTO" Title="Total Price" Width="100px" TextAlign="TextAlign.Right">
+                    <Template Context="item">
+                        <div>৳@item.TotalPrice.ToString("N2")</div>
+                    </Template>
+                    <FooterTemplate>
+                        <div class="text-end fw-bold">৳@FilterDamageProductList.Sum(o => o.TotalPrice).ToString("N2")</div>
+                    </FooterTemplate>
+                </RadzenDataGridColumn>
+            </Columns>
+        </RadzenDataGrid>
+    </div>
+}
+
+@code {
+
+    [Parameter]
+    public int SupplierId { get; set; }
+
+    [Inject]
+    private ILookup m_Lookup { get; set; }
+
+    [Inject]
+    private IDamageProduct m_DamageProduct { get; set; }
+
+    [Inject]
+    private IJSRuntime JSRuntime { get; set; }
+
+    public IEnumerable<DamageProductSummaryDTO> DamageProductList { get; set; } = new List<DamageProductSummaryDTO>();
+    private IEnumerable<DamageProductSummaryDTO> FilterDamageProductList { get; set; } = new List<DamageProductSummaryDTO>();
+
+    private string search = string.Empty;
+    private Message notificationComponent;
+
+    protected override async Task OnInitializedAsync()
+    {
+        DamageProductList = await m_DamageProduct.GetAllDamageProductInStock(SupplierId);
+        FilterDamageProductList = DamageProductList;
+    }
+
+    private void OnSearch(ChangeEventArgs e)
+    {
+        search = e.Value?.ToString() ?? string.Empty;
+        FilterData();
+    }
+
+    private void FilterData()
+    {
+        if (string.IsNullOrWhiteSpace(search))
+        {
+            FilterDamageProductList = DamageProductList;
+        }
+        else
+        {
+            FilterDamageProductList = DamageProductList.Where(c =>
+                (!string.IsNullOrEmpty(c.SupplierName) && c.SupplierName.Contains(search, StringComparison.OrdinalIgnoreCase)) ||
+                (!string.IsNullOrEmpty(c.ProductName) && c.ProductName.Contains(search, StringComparison.OrdinalIgnoreCase)) ||
+                (!string.IsNullOrEmpty(c.TotalQuantity.ToString()) && c.TotalQuantity.ToString().Contains(search, StringComparison.OrdinalIgnoreCase)) ||
+                (!string.IsNullOrEmpty(c.TotalPrice.ToString()) && c.TotalPrice.ToString().Contains(search, StringComparison.OrdinalIgnoreCase))
+            ).ToList();
+        }
+    }
+
+    public async Task ExportToPdf()
+    {
+        if (!ValidationHelper.ValidateAndNotify(FilterDamageProductList, notificationComponent))
+            return;
+
+        var document = Document.Create(container =>
+        {
+            container.Page(page =>
+            {
+                // Set individual margins
+                page.MarginTop(20);     // Top margin
+                page.MarginBottom(20);  // Bottom margin
+                page.MarginLeft(40);    // Left margin
+                page.MarginRight(40);   // Right margin
+
+                page.Size(PageSizes.A4);
+                page.DefaultTextStyle(style => style.FontSize(10));
+
+                page.Header().Element(ComposeHeader);
+
+                page.Content()
+                    .PaddingVertical(10)
+                    .Table(table =>
+                    {
+                        table.ColumnsDefinition(columns =>
+                        {
+                            columns.RelativeColumn(3);
+                            columns.RelativeColumn(3);
+                            columns.RelativeColumn(2);
+                            columns.RelativeColumn(2);
+                        });
+
+                        // Header
+                        table.Header(header =>
+                        {
+                            header.Cell().Background("#f5f5f5").Padding(5).Text("Supplier Name").Bold();
+                            header.Cell().Background("#f5f5f5").Padding(5).Text("Product Name").Bold();
+                            header.Cell().Background("#f5f5f5").Padding(5).Text("Quantity").Bold();
+                            header.Cell().Background("#f5f5f5").Padding(5).Text("Price").Bold();
+                        });
+
+                        // Data rows
+                        foreach (var customer in FilterDamageProductList)
+                        {
+                            table.Cell().PaddingVertical(5).PaddingHorizontal(5).Text(customer.SupplierName);
+                            table.Cell().PaddingVertical(5).PaddingHorizontal(5).Text(customer.ProductName);
+                            table.Cell().PaddingVertical(5).PaddingHorizontal(5).Text(customer.TotalQuantity.ToString());
+                            table.Cell().PaddingVertical(5).PaddingHorizontal(5).Text(customer.TotalPrice.ToString());
+                        }
+
+
+                        // Total Row
+                        table.Cell().ColumnSpan(2).PaddingVertical(5).PaddingHorizontal(5).AlignRight().Text("Total").Bold();
+                        table.Cell().PaddingVertical(5).PaddingHorizontal(5).Text($"{FilterDamageProductList.Sum(x => x.TotalQuantity)}").Bold();
+                        table.Cell().PaddingVertical(5).PaddingHorizontal(5).Text($"{FilterDamageProductList.Sum(x => x.TotalPrice)}").Bold();
+                    });
+
+                page.Footer().Row(row =>
+                    {
+                        row.RelativeItem().AlignLeft().Text(DateTime.Now.ToString("dd/MM/yyyy HH:mm"));
+                        row.RelativeItem().AlignCenter().Text(text =>
+                        {
+                            text.CurrentPageNumber();
+                            text.Span(" / ");
+                            text.TotalPages();
+                        });
+                        row.RelativeItem(); // Empty space for right side (optional)
+                    });
+            });
+        });
+
+        using var stream = new MemoryStream();
+        document.GeneratePdf(stream);
+
+        var fileName = $"Damage Product Stock List_{DateTime.Now:yyyyMMddHHmmss}.pdf";
+        await JSRuntime.InvokeVoidAsync("downloadFile", fileName, "application/pdf", stream.ToArray());
+    }
+
+    void ComposeHeader(IContainer container)
+    {
+        var company = m_Lookup.GetCompanyInfo();
+
+        container.Row(row =>
+        {
+            row.RelativeItem().Column(column =>
+            {
+                column.Item().AlignCenter().Text($"{company.CompanyName}").Bold().FontSize(16);
+                column.Item().AlignCenter().Text($"{company.Address}").FontSize(10);
+                column.Item().AlignCenter().Text($"Damage Product Stock List Report").Bold().FontSize(10);
+            });
+        });
+    }
+
+}

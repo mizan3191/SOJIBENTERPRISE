@@ -1,0 +1,308 @@
+﻿@page "/DamageProductHandover/{SupplierId:int}/{Id:int}"
+
+@rendermode @(new InteractiveServerRenderMode(prerender: false))
+
+@inject NotificationService NotificationService
+
+<Message @ref="notificationComponent" />
+
+<h3>Damage Product Handover</h3>
+@* 
+<div class="row">
+    <div class="col-md-4">
+        @if (SupplierList?.Any() == true)
+        {
+            <label class="form-label">Select Supplier</label>
+            <RadzenDropDown TValue="int"
+            Data="@SupplierList"
+            TextProperty="Name"
+            ValueProperty="Id"
+            Placeholder="Search Supplier"
+            AllowClear="true"
+            Disabled="@IsLock"
+            AllowFiltering="true"
+            FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
+            Style="width: 100%;"
+            Change="OnSupplierChanged" />
+        }
+    </div>
+</div> *@
+
+<EditForm Model="@DamageProductHandover" OnValidSubmit="HandleSubmit">
+    <div class="card dataForm mb-3 mt-3">
+        <div class="row m-3">
+           @*  <div class="col-md-4 mb-3">
+                <label class="Asterisk" for="CustomerId">Issued By</label>
+                <RadzenDropDown @bind-Value="DamageProductHandover.CustomerId"
+                Data="@CustomerList"
+                TextProperty="Name"
+                ValueProperty="Id"
+                Placeholder="Select Customer"
+                Class="w-100"
+                AllowClear="true"
+                AllowFiltering="true"
+                FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" />
+            </div> *@
+            <div class="col-md-4 mb-3">
+                <label class="Asterisk">Total Price</label>
+                <InputNumber @bind-Value="DamageProductHandover.TotalPrice" class="form-control" disabled></InputNumber>
+            </div>
+       @*  </div>
+        <div class="row m-3"> *@
+            <div class="col-md-4 mb-3">
+                <label class="Asterisk">Extra Price</label>
+                <InputNumber @bind-Value="DamageProductHandover.ExtraPrice" class="form-control"></InputNumber>
+            </div>
+            <div class="col-md-4 mb-3">
+                <label class="Asterisk">Discount Price</label>
+                <InputNumber @bind-Value="DamageProductHandover.DiscountPrice" class="form-control"></InputNumber>
+            </div>
+            <div class="col-md-4 d-flex align-items-end">
+                <RadzenButton Text="Save" ButtonStyle="ButtonStyle.Primary" Type="submit" Class="m-2" />
+            </div>
+        </div>
+    </div>
+</EditForm>
+
+<RadzenDataGrid @ref="grid"
+AllowRowSelectOnRowClick="@allowRowSelectOnRowClick"
+AllowFiltering="true"
+AllowPaging="true"
+PageSize="10"
+AllowSorting="true"
+Data="@damageProductList"
+SelectionMode="DataGridSelectionMode.Multiple"
+@bind-Value="@selectedItems">
+    <Columns>
+        <RadzenDataGridColumn Sortable="false" Filterable="false">
+            <HeaderTemplate>
+                <RadzenCheckBox TabIndex="-1"
+                TriState="false"
+                TValue="bool?"
+                InputAttributes="@(new Dictionary<string,object>(){ { "aria-label", "Select all items" }})"
+                Value="@(selectedItems == null || selectedItems?.Any() != true ? false : !damageProductList.All(i => selectedItems.Contains(i)) ? null : damageProductList.Any(i => selectedItems.Contains(i)))"
+                Change="@(args => selectedItems = args == true ? damageProductList.ToList() : new List<DamageProductHandoverDTO>())" />
+            </HeaderTemplate>
+            <Template Context="data">
+                <RadzenCheckBox TabIndex="-1"
+                TriState="false"
+                Value="@(selectedItems != null && selectedItems.Contains(data))"
+                InputAttributes="@(new Dictionary<string,object>(){ { "aria-label", "Select item" }})"
+                TValue="bool"
+                Change="@((args) => { if (!allowRowSelectOnRowClick) { grid.SelectRow(data); }})" />
+            </Template>
+        </RadzenDataGridColumn>
+
+@*         <RadzenDataGridColumn Property="Id" Title="ID" />
+        <RadzenDataGridColumn Property="DamageReturnIdList" Title="Return ID List" /> *@
+        <RadzenDataGridColumn Property="Products" Title="Products" />
+        <RadzenDataGridColumn Property="Quantity" Title="Quantity" />
+        <RadzenDataGridColumn Property="UnitPrice" Title="Unit Price" TextAlign="TextAlign.Right">
+            <Template Context="item">
+                <div>৳@item.UnitPrice.ToString("N2")</div>
+            </Template>
+        </RadzenDataGridColumn>
+        <RadzenDataGridColumn Property="TotalPrice" Title="Total Price" TextAlign="TextAlign.Right">
+            <Template Context="item">
+                <div>৳@item.TotalPrice.ToString("N2")</div>
+            </Template>
+        </RadzenDataGridColumn>
+    </Columns>
+</RadzenDataGrid>
+
+@code {
+    [Parameter]
+    public int Id { get; set; }
+
+    [Parameter]
+    public int SupplierId { get; set; }
+
+    [Inject]
+    private IDamageProductHandover m_DamageProductHandover { get; set; }
+
+    [Inject]
+    private ILookup m_Lookup { get; set; }
+
+    private bool allowRowSelectOnRowClick = true;
+
+    private IList<DamageProductHandoverDTO> damageProductList = new List<DamageProductHandoverDTO>();
+    private RadzenDataGrid<DamageProductHandoverDTO> grid;
+
+    private IList<DamageProductHandoverDTO> _selectedItems = new List<DamageProductHandoverDTO>();
+    private IList<DamageProductHandoverDTO> selectedItems
+    {
+        get => _selectedItems;
+        set
+        {
+            _selectedItems = value;
+            CalculateTotalPrice();
+        }
+    }
+
+    private DamageProductHandover DamageProductHandover { get; set; } = new();
+
+    private IEnumerable<Lovd> CustomerList { get; set; } = new List<Lovd>();
+    private IEnumerable<Lov> SupplierList { get; set; } = new List<Lov>();
+
+
+    public bool IsLock { get; set; } = false;
+
+    [Inject]
+    private NavigationManager _navigationManager { get; set; }
+
+    private Message notificationComponent;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            SupplierList = await m_Lookup.GetAllSupplierList();
+            CustomerList = await m_Lookup.GetAllCustomerList();
+            
+            ////SupplierList = SupplierList.Where(c => !c.IsDeleted);
+            ////CustomerList = CustomerList.Where(c => !c.IsDeleted);
+
+            if (Id <= 0 && SupplierId > 0)
+            {
+               await OnProductsFilter(SupplierId);
+            }
+            else
+            {
+                IsLock = true;
+
+                // Load existing handover
+                DamageProductHandover = m_DamageProductHandover.GetDamageProductHandoverById(Id);
+                if (DamageProductHandover == null) return;
+
+                SupplierId = DamageProductHandover.SupplierId;
+
+                // Load available products - ensure this includes product names
+                var availableProducts = m_DamageProductHandover.GetDamageProductBySupplierId(SupplierId)
+                                      ?? new List<DamageProductHandoverDTO>();
+
+                // Create lookup of available products by ProductId and UnitPrice
+                var availableProductsLookup = availableProducts
+                    .ToLookup(p => new { p.ProductId, p.UnitPrice });
+
+                // Map existing selected items, preserving all original info
+                var existingSelectedProducts = DamageProductHandover.DamageProductHandoverDetails?
+                    .Select(detail =>
+                    {
+                        // Try to find matching product in available products to get full info
+                        var matchingAvailable = availableProductsLookup[
+                            new { detail.ProductId, detail.UnitPrice }].FirstOrDefault();
+
+                        return new DamageProductHandoverDTO
+                        {
+                            Id = detail.Id,
+                            ProductId = detail.ProductId,
+                            Products = matchingAvailable?.Products ?? detail.Product?.Name ?? string.Empty,
+                            Quantity = detail.Quantity,
+                            UnitPrice = detail.UnitPrice,
+                            TotalPrice = detail.TotalPrice,
+                            DamageReturnIdList = detail.DamageReturnIdList
+                        };
+                    })
+                    .ToList() ?? new List<DamageProductHandoverDTO>();
+
+                // Combine lists - existing selected products first to preserve their data
+                damageProductList = existingSelectedProducts
+                    .UnionBy(availableProducts, x => new { x.ProductId, x.UnitPrice })
+                    .ToList();
+
+                // Set selected items
+                selectedItems = damageProductList
+                    .Where(x => existingSelectedProducts.Any(e =>
+                        e.ProductId == x.ProductId &&
+                        Math.Abs(e.UnitPrice - x.UnitPrice) < 0.01))
+                    .ToList();
+
+                CalculateTotalPrice();
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error initializing component: {ex.Message}");
+            // Handle error
+        }
+    }
+
+    private async Task OnSupplierChanged(object value)
+    {
+        if (int.TryParse(value?.ToString(), out var newId))
+        {
+            SupplierId = newId > 0 ? newId : 0;
+            await OnProductsFilter(SupplierId);
+        }
+    }
+
+    private async Task OnProductsFilter(int supplierId)
+    {
+        damageProductList = m_DamageProductHandover.GetDamageProductBySupplierId(supplierId);
+        selectedItems.Clear();
+        CalculateTotalPrice();
+        StateHasChanged();
+    }
+
+    public void HandleSubmit()
+    {
+        try
+        {
+            DamageProductHandover.Date = DateTime.Now;
+            DamageProductHandover.SupplierId = SupplierId;
+            DamageProductHandover.TotalPrice = (DamageProductHandover.TotalPrice + DamageProductHandover.ExtraPrice) - DamageProductHandover.DiscountPrice;
+
+            // Add selected items as details
+            DamageProductHandover.DamageProductHandoverDetails = selectedItems.Select(item => new DamageProductHandoverDetails
+                {
+                    ProductId = item.ProductId, // Make sure this exists in DamageProductHandoverDTO
+                    Quantity = item.Quantity,
+                    UnitPrice = item.UnitPrice,
+                    TotalPrice = item.Quantity * item.UnitPrice,
+                    DamageReturnIdList = item.DamageReturnIdList
+                }).ToList();
+
+            if (DamageProductHandover.DamageProductHandoverDetails == null || !DamageProductHandover.DamageProductHandoverDetails.Any())
+            {
+                notificationComponent.Show("Empty Handover", "You must add at least one product", NotificationSeverity.Warning);
+                return;
+            }
+
+            if (DamageProductHandover.CustomerId <= 0)
+            {
+                notificationComponent.Show("Validation Summary", "Issued By must be select Handover on Supplier", NotificationSeverity.Error);
+                return;
+            }
+
+            if (DamageProductHandover.Id > 0)
+            {
+                m_DamageProductHandover.UpdateDamageProductHandover(DamageProductHandover);
+                notificationComponent.Show("Update Summary", "Damage Product has been successfully Handover on Supplier", NotificationSeverity.Warning);
+            }
+            else
+            {
+                m_DamageProductHandover.CreateDamageProductHandover(DamageProductHandover);
+                notificationComponent.Show("Added Summary", "Damage Product has been successfully Handover on Supplier", NotificationSeverity.Success);
+            }
+
+            _navigationManager.NavigateTo($"/DamageStock", true);
+
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Exception: {ex.Message}");
+        }
+    }
+
+    private void CalculateTotalPrice()
+    {
+        if (selectedItems != null && selectedItems.Any())
+        {
+            DamageProductHandover.TotalPrice = selectedItems.Sum(item => item.Quantity * item.UnitPrice);
+        }
+        else
+        {
+            DamageProductHandover.TotalPrice = 0;
+        }
+    }
+}

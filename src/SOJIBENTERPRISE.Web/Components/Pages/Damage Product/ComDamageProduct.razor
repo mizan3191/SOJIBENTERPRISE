@@ -1,0 +1,513 @@
+﻿@page "/DamageProducts/{SupplierId:int}"
+
+@rendermode @(new InteractiveServerRenderMode(prerender: false))
+@inject DialogService DialogService
+
+<Message @ref="notificationComponent" />
+
+<h3>Damage Products </h3>
+
+@if (DamageProductList == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <div class="card-body p-0">
+        <div class="d-flex align-items-center mb-3" style="width: 100%;">
+            <!-- Add New Button -->
+            <RadzenButton Click="@AddNew" Text="Add New" ButtonStyle="ButtonStyle.Success" class="me-3" />
+
+            <!-- Search Box -->
+            <div class="d-flex align-items-center border rounded me-3" style="width: fit-content;">
+                <!-- Search Icon -->
+                <span class="ps-2" style="font-size: 1.2rem; color: #6c757d;">
+                    <i class="fas fa-search"></i>
+                </span>
+
+                <!-- Search Text Box -->
+                <RadzenTextBox @bind-Value="@search" TValue="string" Placeholder="Search..." @oninput="OnSearch"
+                               Style="border: none; box-shadow: none; padding-left: 0.5rem;" />
+            </div>
+
+            <!-- Export Button -->
+            <div class="d-flex align-items-center border rounded me-3" style="width: fit-content;">
+                <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="1rem;" Wrap="FlexWrap.Wrap" Style="padding-left: 0.10rem;">
+                    <RadzenButton Text="Export To PDF" Icon="picture_as_pdf" Click="@(args => ExportToPdf())" />
+                </RadzenStack>
+            </div>
+
+            <!-- Spacer to push dates to the right -->
+            <div class="flex-grow-1"></div>
+
+            <!-- Date Filter - Now aligned to the right with consistent widths -->
+            <div class="d-flex align-items-center">
+                <div class="d-flex align-items-center me-3">
+                    <RadzenDatePicker @bind-Value="fromDate" DateFormat="yyyy-MM-dd" Placeholder="Select Start Date"
+                                      Style="width: 180px;" />
+                </div>
+                <div class="d-flex align-items-center">
+                    <RadzenDatePicker @bind-Value="toDate" DateFormat="yyyy-MM-dd" Placeholder="Select End Date"
+                                      Style="width: 180px;" />
+                </div>
+            </div>
+        </div>
+
+        <RadzenDataGrid Data="@FilterDamageProductList" TItem="DamageProduct" PageSize="10" AllowPaging="true" AllowSorting="true" AllowFiltering="false">
+            <Columns>
+                <RadzenDataGridColumn TItem="DamageProduct" Title="Supplier Name" Width="150px">
+                    <Template Context="item">
+                        <div>@item.Product.Supplier.Name</div>
+                    </Template>
+                </RadzenDataGridColumn>
+                <RadzenDataGridColumn TItem="DamageProduct" Title="Product Name" Width="150px">
+                    <Template Context="item">
+                        <div>@item.Product.DisplayNameSize</div>
+                    </Template>
+                </RadzenDataGridColumn>
+                <RadzenDataGridColumn TItem="DamageProduct" Title="Unit Price" Width="100px" TextAlign="TextAlign.Right">
+                    <Template Context="item">
+                        <div>৳@item.UnitPrice.ToString("N2")</div>
+                    </Template>
+                </RadzenDataGridColumn>
+                <RadzenDataGridColumn TItem="DamageProduct" Property="@nameof(DamageProduct.Quantity)" Title="Quantity" Width="100px" />
+                <RadzenDataGridColumn TItem="DamageProduct" Property="@nameof(DamageProduct.Date)" Title="Date Time" Width="150px" />
+                <RadzenDataGridColumn TItem="DamageProduct" Title="Issue By" Width="150px">
+                    <Template Context="item">
+                        <div>@item.Customer.Name</div>
+                    </Template>
+                </RadzenDataGridColumn>
+                <RadzenDataGridColumn TItem="DamageProduct" Title="Actions" Width="100px">
+                    <Template Context="context">
+                        <RadzenButton Icon="edit" ButtonStyle="ButtonStyle.Primary" Size="ButtonSize.Small"
+                                      Click="() => Edit(context.Id)" style="margin-right: 5px;" title="Edit" />
+                        @* <RadzenButton Icon="check" ButtonStyle="ButtonStyle.Success" Size="ButtonSize.Small"
+                                      Click="() => ConfirmReceived(context.Id)" title="Received Product" /> *@
+                        <RadzenButton Icon="delete" ButtonStyle="ButtonStyle.Danger" Size="ButtonSize.Small"
+                                      Click="() => ConfirmDelete(context.Id)" title="Delete" />
+                    </Template>
+                </RadzenDataGridColumn>
+            </Columns>
+        </RadzenDataGrid>
+    </div>
+}
+
+@if (showModal)
+{
+    <div class="modal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="1" style="display:block">
+        <div class="modal-dialog modal-lg modal-dialog-scrollable modal-dialog-centered">
+            <div class="modal-content card dataFormPop">
+                <div class="modal-header">
+                    <h3>@(DamageProduct.Id > 0 ? "Edit Damage Product" : "Add Damage Product")</h3>
+                </div>
+
+                <EditForm Model="@DamageProduct" OnValidSubmit="HandleSubmit">
+                    <div class="card dataForm ">
+                        <div class="row m-3">
+                            <div class="col-md-4 mb-3">
+                                <label class="Asterisk form-label">Date</label>
+                                <RadzenDatePicker @bind-Value="DamageProduct.Date" DateFormat="yyyy-MM-dd" Class="w-100" />
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="Asterisk form-label">Product Name</label>
+                                <RadzenDropDown @bind-Value="DamageProduct.ProductId"
+                                                Data="@ProductList"
+                                                TextProperty="Name"
+                                                ValueProperty="Id"
+                                                Placeholder="Search Product Name"
+                                                Class="w-100"
+                                                AllowClear="true"
+                                                AllowFiltering="true"
+                                                FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" />
+                            </div>
+
+                            <div class="col-md-4 mb-3">
+                                <label class="Asterisk form-label">Unit Price</label>
+                                <InputNumber @bind-Value="DamageProduct.UnitPrice" class="form-control"></InputNumber>
+                            </div>
+                        </div>
+                        <div class="row m-3">
+                            <div class="col-md-4 mb-3">
+                                <label class="Asterisk form-label">Quantity</label>
+                                <InputNumber @bind-Value="DamageProduct.Quantity" class="form-control"></InputNumber>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="Asterisk form-label">Issued BY</label>
+                                <RadzenDropDown @bind-Value="DamageProduct.CustomerId"
+                                                Data="@CustomerList"
+                                                TextProperty="Name"
+                                                ValueProperty="Id"
+                                                Placeholder="Search Name"
+                                                Class="w-100"
+                                                AllowClear="true"
+                                                AllowFiltering="true"
+                                                FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" />
+                            </div>
+                        </div>
+
+                        <br />
+                        <div class="col-md-12">
+                            <RadzenButton Text="Save" ButtonStyle="ButtonStyle.Primary" Type="submit" Class="m-2" />
+                            <RadzenButton Text="Cancel" ButtonStyle="ButtonStyle.Secondary" Click="CloseModal" Class="m-2" />
+                        </div>
+                    </div>
+                </EditForm>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+
+    [Parameter]
+    public int SupplierId { get; set; }
+
+    [Inject]
+    private ILookup m_Lookup { get; set; }
+
+    [Inject]
+    private IDamageProduct m_DamageProduct { get; set; }
+
+    public IEnumerable<DamageProduct> DamageProductList { get; set; } = new List<DamageProduct>();
+
+    public IEnumerable<Lov> ProductList { get; set; } = new List<Lov>();
+    private IEnumerable<Lovd> CustomerList { get; set; } = new List<Lovd>();
+
+    private bool showModal = false;
+
+    public DamageProduct DamageProduct { get; set; }
+    private Message notificationComponent;
+
+
+    [Inject]
+    private IJSRuntime JSRuntime { get; set; }
+
+    private IEnumerable<DamageProduct> FilterDamageProductList { get; set; } = new List<DamageProduct>();
+
+    private string search = string.Empty;
+
+    private DateTime? _fromDate;
+    private DateTime? _toDate;
+
+    protected override async Task OnInitializedAsync()
+    {
+        CustomerList = await m_Lookup.GetAllCustomerList();
+        ////CustomerList = CustomerList.Where(c => !c.IsDeleted);
+        ProductList = await m_Lookup.GetAllProductList();
+        //ProductList = ProductList.Where(c => !c.IsDeleted);
+
+        await LoadData();
+    }
+
+    private async Task HandleSubmit()
+    {
+        if (DamageProduct.ProductId <= 0)
+        {
+            notificationComponent.Show("Validation Summary", "Please select a product.", NotificationSeverity.Warning);
+            return;
+        }
+
+        if (DamageProduct.CustomerId <= 0)
+        {
+            notificationComponent.Show("Validation Summary", "Please select a issued by name.", NotificationSeverity.Warning);
+            return;
+        }
+
+        if (DamageProduct.Quantity <= 0)
+        {
+            notificationComponent.Show("Validation Summary", "Please enter a valid quantity greater than zero.", NotificationSeverity.Warning);
+            return;
+        }
+
+
+        showModal = false;
+
+        if (DamageProduct.Id > 0)
+        {
+            m_DamageProduct.UpdateDamageProduct(DamageProduct);
+            notificationComponent.Show("Updated Summary", "Damage Product has been Updated successfully", NotificationSeverity.Warning);
+        }
+        else
+        {
+            m_DamageProduct.CreateDamageProduct(DamageProduct);
+            notificationComponent.Show("Added Summary", "Damage Product has been Added successfully", NotificationSeverity.Success);
+        }
+
+        await LoadData();
+        StateHasChanged();
+    }
+
+    private void Edit(int id)
+    {
+        showModal = true;
+
+        if (id > 0)
+        {
+            DamageProduct = m_DamageProduct.GetDamageProduct(id);
+        }
+        else
+        {
+            DamageProduct = new DamageProduct()
+                {
+                    Date = DateTime.Now,
+                    CustomerId = CustomerList.FirstOrDefault()?.Id ?? 0,
+                    ProductId = ProductList.FirstOrDefault()?.Id ?? 0,
+                };
+        }
+    }
+
+    async Task ConfirmReceived(int id)
+    {
+        var options = new ConfirmOptions()
+            {
+                OkButtonText = "Yes, Received",
+                CancelButtonText = "No, Keep",
+                ShowClose = true,
+            };
+
+        bool? confirmed = await DialogService.Confirm("Are you absolutely sure you received this item?", "Received Confirmation", options);
+
+        if (confirmed == true)
+        {
+            await Received(id);
+        }
+    }
+
+
+    async Task Received(int id)
+    {
+        m_DamageProduct.ReceivedDamageProduct(id);
+        notificationComponent.Show("Received Summary", "Damage Product has been Received successfully", NotificationSeverity.Success);
+
+        await LoadData();
+        StateHasChanged();
+    }
+
+    async Task ConfirmDelete(int id)
+    {
+        var options = new ConfirmOptions()
+            {
+                OkButtonText = "Yes, Delete",
+                CancelButtonText = "No, Keep",
+                ShowClose = true,
+            };
+
+        bool? confirmed = await DialogService.Confirm("Are you absolutely sure you Delete this item?", "Delete Confirmation", options);
+
+        if (confirmed == true)
+        {
+            await Delete(id);
+        }
+    }
+
+    async Task Delete(int id)
+    {
+        m_DamageProduct.DeleteDamageProduct(id);
+        notificationComponent.Show("Deleted Summary", "Damage Product has been Deleted successfully", NotificationSeverity.Success);
+
+        await LoadData();
+        StateHasChanged();
+    }
+
+
+    private void AddNew()
+    {
+        DamageProduct = new DamageProduct()
+            {
+                Date = DateTime.Now,
+                CustomerId = CustomerList.FirstOrDefault()?.Id ?? 0,
+                ProductId = ProductList.FirstOrDefault()?.Id ?? 0,
+            };
+        showModal = true;
+    }
+
+    private async Task LoadData()
+    {
+        DamageProductList = await m_DamageProduct.GetAllDamageProduct(SupplierId, null, null);
+        FilterDamageProductList = DamageProductList;
+    }
+
+    private async void LoadSalesHistory()
+    {
+        DamageProductList = await m_DamageProduct.GetAllDamageProduct(SupplierId, fromDate, toDate);
+        FilterDamageProductList = DamageProductList;
+
+        FilterData();
+
+        StateHasChanged();
+    }
+
+    private void CloseModal()
+    {
+        showModal = false;
+    }
+
+
+    private void OnSearch(ChangeEventArgs e)
+    {
+        search = e.Value?.ToString() ?? string.Empty;
+        FilterData();
+    }
+
+
+
+    public DateTime? fromDate
+    {
+        get => _fromDate;
+        set
+        {
+            if (_fromDate != value)
+            {
+                _fromDate = value;
+                LoadSalesHistory();
+            }
+        }
+    }
+
+    public DateTime? toDate
+    {
+        get => _toDate;
+        set
+        {
+            if (_toDate != value)
+            {
+                _toDate = value;
+                LoadSalesHistory(); 
+            }
+        }
+    }
+
+
+    private void FilterData()
+    {
+        if (string.IsNullOrWhiteSpace(search))
+        {
+            FilterDamageProductList = DamageProductList;
+        }
+        else
+        {
+            FilterDamageProductList = DamageProductList.Where(c =>
+                (!string.IsNullOrEmpty(c.Product.Name) && c.Product.Name.Contains(search, StringComparison.OrdinalIgnoreCase)) ||
+                (!string.IsNullOrEmpty(c.Quantity.ToString()) && c.Quantity.ToString().Contains(search, StringComparison.OrdinalIgnoreCase)) ||
+                (!string.IsNullOrEmpty(c.UnitPrice.ToString()) && c.UnitPrice.ToString().Contains(search, StringComparison.OrdinalIgnoreCase)) ||
+                (!string.IsNullOrEmpty(c.Customer.Name) && c.Customer.Name.Contains(search, StringComparison.OrdinalIgnoreCase)) ||
+                (!string.IsNullOrEmpty(c.Product.Supplier.Name) && c.Product.Supplier.Name.Contains(search, StringComparison.OrdinalIgnoreCase)) ||
+                (!string.IsNullOrEmpty(c.Date.ToString()) && c.Date.ToString().Contains(search, StringComparison.OrdinalIgnoreCase))
+            ).ToList();
+        }
+
+        // Apply date filtering with proper date-only comparison
+        if (fromDate.HasValue || toDate.HasValue)
+        {
+            // Convert to DateOnly for comparison (or use DateTime.Date)
+            var filterFrom = fromDate?.Date ?? DateTime.MinValue;
+            var filterTo = toDate?.Date.AddDays(1) ?? DateTime.MaxValue; // Add 1 day to include entire end date
+
+            FilterDamageProductList = FilterDamageProductList.Where(x =>
+                x.Date.Date >= filterFrom &&
+                x.Date.Date < filterTo
+            ).ToList();
+        }
+    }
+
+    public async Task ExportToPdf()
+    {
+        if (!ValidationHelper.ValidateAndNotify(FilterDamageProductList, notificationComponent))
+            return;
+
+        var document = Document.Create(container =>
+        {
+            container.Page(page =>
+            {
+                // Set individual margins
+                page.MarginTop(20);     // Top margin
+                page.MarginBottom(20);  // Bottom margin
+                page.MarginLeft(40);    // Left margin
+                page.MarginRight(40);   // Right margin
+
+                page.Size(PageSizes.A4);
+                page.DefaultTextStyle(style => style.FontSize(10));
+
+                page.Header().Element(ComposeHeader);
+
+                page.Content()
+                    .PaddingVertical(10)
+                    .Table(table =>
+                    {
+                        table.ColumnsDefinition(columns =>
+                        {
+                            columns.RelativeColumn(3);
+                            columns.RelativeColumn(3);
+                            columns.RelativeColumn(2);
+                            columns.RelativeColumn(2);
+                            columns.RelativeColumn(2);
+                            columns.RelativeColumn(3);
+                        });
+
+                        // Header
+                        table.Header(header =>
+                        {
+                            header.Cell().Background("#f5f5f5").Padding(5).Text("Supplier Name").Bold();
+                            header.Cell().Background("#f5f5f5").Padding(5).Text("Product Name").Bold();
+                            header.Cell().Background("#f5f5f5").Padding(5).Text("Unit Price").Bold();
+                            header.Cell().Background("#f5f5f5").Padding(5).Text("Quantity").Bold();
+                            header.Cell().Background("#f5f5f5").Padding(5).Text("Issued By").Bold();
+                            header.Cell().Background("#f5f5f5").Padding(5).Text("Date Time").Bold();
+                        });
+
+                        // Data rows
+                        foreach (var customer in FilterDamageProductList)
+                        {
+                            table.Cell().PaddingVertical(5).PaddingHorizontal(5).Text(customer.Product.Supplier.Name);
+                            table.Cell().PaddingVertical(5).PaddingHorizontal(5).Text(customer.Product.DisplayNameSize);
+                            table.Cell().PaddingVertical(5).PaddingHorizontal(5).Text(customer.UnitPrice.ToString());
+                            table.Cell().PaddingVertical(5).PaddingHorizontal(5).Text(customer.Quantity.ToString());
+                            table.Cell().PaddingVertical(5).PaddingHorizontal(5).Text(customer.Customer.Name);
+                            table.Cell().PaddingVertical(5).PaddingHorizontal(5).Text(customer.Date.ToString());
+                        }
+
+
+                        // Total Row
+                        table.Cell().ColumnSpan(2).PaddingVertical(5).PaddingHorizontal(5).AlignRight().Text("Total").Bold();
+                        table.Cell().PaddingVertical(5).PaddingHorizontal(5).Text($"৳{FilterDamageProductList.Sum(x => x.UnitPrice * x.Quantity):N2}").Bold();
+                        table.Cell().PaddingVertical(5).PaddingHorizontal(5).Text("").Bold(); // Empty cell for Date column
+                    });
+
+                page.Footer().Row(row =>
+                    {
+                        row.RelativeItem().AlignLeft().Text(DateTime.Now.ToString("dd/MM/yyyy HH:mm"));
+                        row.RelativeItem().AlignCenter().Text(text =>
+                        {
+                            text.CurrentPageNumber();
+                            text.Span(" / ");
+                            text.TotalPages();
+                        });
+                        row.RelativeItem(); // Empty space for right side (optional)
+                    });
+            });
+        });
+
+        using var stream = new MemoryStream();
+        document.GeneratePdf(stream);
+
+        var fileName = $"Damage Product List_{DateTime.Now:yyyyMMddHHmmss}.pdf";
+        await JSRuntime.InvokeVoidAsync("downloadFile", fileName, "application/pdf", stream.ToArray());
+    }
+
+
+    void ComposeHeader(IContainer container)
+    {
+        var company = m_Lookup.GetCompanyInfo();
+
+        container.Row(row =>
+        {
+            row.RelativeItem().Column(column =>
+            {
+                column.Item().AlignCenter().Text($"{company.CompanyName}").Bold().FontSize(16);
+                column.Item().AlignCenter().Text($"{company.Address}").FontSize(10);
+                column.Item().AlignCenter().Text($"Damage Product List Report").Bold().FontSize(10);
+            });
+        });
+    }
+
+}

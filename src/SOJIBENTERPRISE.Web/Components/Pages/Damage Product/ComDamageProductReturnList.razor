@@ -1,0 +1,104 @@
+﻿@* @page "/DamageProductReturnList/{OrderId:int}"
+@rendermode @(new InteractiveServerRenderMode(prerender: false))
+@inject DialogService DialogService
+
+<h3>Damage Product Return List</h3>
+
+<Message @ref="notificationComponent" />
+
+@if (DamageProductReturns == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <div class="card-body p-0">
+        <RadzenDataGrid Data="@DamageProductReturns" TItem="DamageProductReturnDTO" PageSize="10" AllowPaging="true" AllowSorting="true" AllowFiltering="false">
+            <Columns>
+                <RadzenDataGridColumn TItem="DamageProductReturnDTO" Property="@nameof(DamageProductReturnDTO.Id)" Title="Id" Width="100px" />
+                <RadzenDataGridColumn TItem="DamageProductReturnDTO" Property="@nameof(DamageProductReturnDTO.CustomerName)" Title="Name" Width="150px" />
+                <RadzenDataGridColumn TItem="DamageProductReturnDTO" Property="@nameof(DamageProductReturnDTO.Products)" Title="Products Name" Width="250px" />
+                <RadzenDataGridColumn TItem="DamageProductReturnDTO" Property="@nameof(DamageProductReturnDTO.OrderDate)" Title="Date" Width="140px" />               
+                <RadzenDataGridColumn TItem="DamageProductReturnDTO" Title="Price" Width="100px">
+                    <Template Context="item">
+                        <div class="text-end">৳@item.TotalPrice.ToString("N2")</div>
+                    </Template>
+                </RadzenDataGridColumn>
+                <RadzenDataGridColumn TItem="DamageProductReturnDTO" Title="Actions" Width="70px">
+                    <Template Context="context">
+                        <RadzenButton Icon="edit" ButtonStyle="ButtonStyle.Primary" Size="ButtonSize.Small"
+                        Click="() => Edit(context.Id, context.OrderId)" style="margin-right: 5px;" title="Edit" />
+                        <RadzenButton Icon="delete" ButtonStyle="ButtonStyle.Danger" Size="ButtonSize.Small"
+                        Click="() => ConfirmDelete(context.Id)" title="Delete" />
+                    </Template>
+                </RadzenDataGridColumn>
+            </Columns>
+        </RadzenDataGrid>
+    </div>
+}
+
+@code {
+    [Parameter]
+    public int OrderId { get; set; }
+
+    [Inject]
+    private IDamageProductReturns m_DamageProductReturns { get; set; }
+
+    [Inject]
+    private NavigationManager _navigationManager { get; set; }
+
+
+    private Message notificationComponent;
+
+    private IEnumerable<DamageProductReturnDTO> DamageProductReturns { get; set; } = new List<DamageProductReturnDTO>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    private void Edit(int id, int orderId)
+    {
+        _navigationManager.NavigateTo($"/DamageProductReturn/{id}/{orderId}");
+    }
+
+    private async Task Delete(int id)
+    {
+        m_DamageProductReturns.DeleteDamageProductReturn(id);
+        await LoadData();
+        StateHasChanged();
+    }
+
+    async Task ConfirmDelete(int productId)
+    {
+        var options = new ConfirmOptions()
+            {
+                OkButtonText = "Yes, Delete",
+                CancelButtonText = "No, Keep",
+                ShowClose = true,
+            };
+
+        bool? confirmed = await DialogService.Confirm("Are you absolutely sure you want to delete this item?", "Delete Confirmation", options);
+
+        if (confirmed == true)
+        {
+            await DeleteProduct(productId);
+        }
+    }
+
+    async Task DeleteProduct(int productId)
+    {
+        m_DamageProductReturns.DeleteDamageProductReturn(productId);
+        notificationComponent.Show("Deleted Summary", "Damage Product Returns has been Deleted successfully", NotificationSeverity.Error);
+        await LoadData();
+        StateHasChanged(); 
+    }
+
+    private async Task LoadData()
+    {
+        if (OrderId > 0)
+        {
+            DamageProductReturns = await m_DamageProductReturns.GetAllCustomerReturnProducts(OrderId);
+        }
+    }
+} *@

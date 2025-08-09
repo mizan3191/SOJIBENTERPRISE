@@ -1,0 +1,277 @@
+﻿@page "/Orders"
+@rendermode @(new InteractiveServerRenderMode(prerender: false))
+@inject DialogService DialogService
+
+<h3>Order List</h3>
+
+@if (PreOrdersList == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <div class="card-body p-0">
+
+        <div class="d-flex align-items-center mb-3" style="width: 100%;">
+            <RadzenButton Click="@AddNew" Text="Add New" ButtonStyle="ButtonStyle.Success" />
+
+            <!-- Search Box -->
+            <div class="d-flex align-items-center border rounded me-3 mx-3" style="width: fit-content;">
+                <!-- Search Icon -->
+                <span class="ps-2" style="font-size: 1.2rem; color: #6c757d;">
+                    <i class="fas fa-search"></i> <!-- Font Awesome search icon -->
+                </span>
+
+                <!-- Search Text Box -->
+                <RadzenTextBox @bind-Value="@search" TValue="string" Placeholder="Search..." @oninput="OnSearch"
+                Style="border: none; box-shadow: none; padding-left: 0.5rem;" />
+            </div>
+
+            <!-- Export Button -->
+            <div class="d-flex align-items-center border rounded" style="width: fit-content;">
+                <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="1rem;" Wrap="FlexWrap.Wrap" Style="padding-left: 0.10rem;">
+                    <RadzenButton Text="Export To PDF" Icon="picture_as_pdf" Click="@(args => ExportToPdf())" />
+                </RadzenStack>
+            </div>
+        </div>
+
+        <RadzenDataGrid Data="@FilterOrders" TItem="PreOrdersDTO" PageSize="10" AllowPaging="true" AllowSorting="true" AllowFiltering="false">
+            <Columns>
+                <RadzenDataGridColumn TItem="PreOrdersDTO" Property="@nameof(PreOrdersDTO.Id)" Title="Id" Width="80px" />
+                <RadzenDataGridColumn TItem="PreOrdersDTO" Property="@nameof(PreOrdersDTO.ProductName)" Title="Products Name" Width="180px" />
+                <RadzenDataGridColumn TItem="PreOrdersDTO" Property="@nameof(PreOrdersDTO.CustomerName)" Title="Customer Name" Width="100px" />
+                <RadzenDataGridColumn TItem="PreOrdersDTO" Property="@nameof(PreOrdersDTO.OrderDate)" Title="Date Time" Width="140px" />
+                <RadzenDataGridColumn TItem="PreOrdersDTO" Title="Price" Width="100px">
+                    <Template Context="item">
+                        <div class="text-end">৳@item.TotalPrice.ToString("N2")</div>
+                    </Template>
+                </RadzenDataGridColumn>
+                <RadzenDataGridColumn TItem="PreOrdersDTO" Title="Actions" Width="90px">
+                    <Template Context="order">
+                        <RadzenButton Icon="edit" ButtonStyle="ButtonStyle.Primary" Size="ButtonSize.Small"
+                        Click="() => Edit(order.Id)" style="margin-right: 5px;" title="Edit" />
+                        <RadzenButton Icon="shopping_cart" ButtonStyle="ButtonStyle.Success" Size="ButtonSize.Small"
+                        Click="() => ConfirmSales(order.Id)" style="margin-right: 5px;" title="Make Sales" />
+                        <RadzenButton Icon="delete" ButtonStyle="ButtonStyle.Danger" Size="ButtonSize.Small"
+                        Click="() => ConfirmDelete(order.Id)" title="Delete" />
+                    </Template>
+                </RadzenDataGridColumn>
+            </Columns>
+        </RadzenDataGrid>
+    </div>
+}
+
+@code {
+    [Inject]
+    private IPreOrder m_PreOrder { get; set; }
+
+    [Inject]
+    private NavigationManager _navigationManager { get; set; }
+
+    private Message notificationComponent;
+
+    private IEnumerable<PreOrdersDTO> PreOrdersList { get; set; } = new List<PreOrdersDTO>();
+
+    
+    [Inject]
+    private ILookup m_Lookup { get; set; }
+
+
+    [Inject]
+    private IJSRuntime JSRuntime { get; set; }
+
+    private IEnumerable<PreOrdersDTO> FilterOrders { get; set; } = new List<PreOrdersDTO>();
+
+    private string search = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    private void Edit(int id)
+    {
+        _navigationManager.NavigateTo($"/Order/{id}");
+    }
+
+    async Task ConfirmDelete(int id)
+    {
+        var options = new ConfirmOptions()
+            {
+                OkButtonText = "Yes, Delete",
+                CancelButtonText = "No, Keep",
+                ShowClose = true,
+            };
+
+        bool? confirmed = await DialogService.Confirm("Are you absolutely sure you want to delete this item?", "Delete Confirmation", options);
+
+        if (confirmed == true)
+        {
+            await Delete(id);
+        }
+    }
+
+    async Task Delete(int id)
+    {
+        m_PreOrder.DeletePreOrder(id);
+        notificationComponent.Show("Deleted Summary", "Order has been Deleted successfully", NotificationSeverity.Error);
+        await LoadData();
+        StateHasChanged();
+    }
+
+    async Task ConfirmSales(int id)
+    {
+        var options = new ConfirmOptions()
+            {
+                OkButtonText = "Yes, Make Sales",
+                CancelButtonText = "No, Keep",
+                ShowClose = true,
+            };
+
+        bool? confirmed = await DialogService.Confirm("Are you absolutely sure you want to Make Sales this items?", "Make Sales Confirmation", options);
+
+        if (confirmed == true)
+        {
+            await MakeSales(id);
+        }
+    }
+
+    async Task MakeSales(int id)
+    {
+        //notificationComponent.Show("Make Sales Summary", "Order has been Transferred Successfully", NotificationSeverity.Success);
+        _navigationManager.NavigateTo($"/Sale/0/0/{id}");
+    }
+
+    async Task LoadData()
+    {
+        PreOrdersList = await m_PreOrder.GetAllPreOrders();
+        FilterOrders = PreOrdersList;
+    }
+
+    private void AddNew()
+    {
+        _navigationManager.NavigateTo($"/Order");
+    }
+
+
+    private void OnSearch(ChangeEventArgs e)
+    {
+        search = e.Value?.ToString() ?? string.Empty;
+        FilterData();
+    }
+
+    private void FilterData()
+    {
+        if (string.IsNullOrWhiteSpace(search))
+        {
+            FilterOrders = PreOrdersList;
+        }
+        else
+        {
+            FilterOrders = PreOrdersList.Where(c =>
+                (!string.IsNullOrEmpty(c.ProductName) && c.ProductName.Contains(search, StringComparison.OrdinalIgnoreCase)) ||
+                (!string.IsNullOrEmpty(c.CustomerName) && c.CustomerName.Contains(search, StringComparison.OrdinalIgnoreCase)) ||
+                (!string.IsNullOrEmpty(c.OrderDate.ToString()) && c.OrderDate.ToString().Contains(search, StringComparison.OrdinalIgnoreCase)) ||
+                (!string.IsNullOrEmpty(c.TotalPrice.ToString()) && c.TotalPrice.ToString().Contains(search, StringComparison.OrdinalIgnoreCase))
+            ).ToList();
+        }
+
+
+    }
+
+    public async Task ExportToPdf()
+    {
+        if (!ValidationHelper.ValidateAndNotify(FilterOrders, notificationComponent))
+            return;
+
+        var document = Document.Create(container =>
+        {
+            container.Page(page =>
+            {
+                // Set individual margins
+                page.MarginTop(20);     // Top margin
+                page.MarginBottom(20);  // Bottom margin
+                page.MarginLeft(40);    // Left margin
+                page.MarginRight(40);   // Right margin
+
+                page.Size(PageSizes.A4);
+                page.DefaultTextStyle(style => style.FontSize(10));
+
+                page.Header().Element(ComposeHeader);
+
+                page.Content()
+                    .PaddingVertical(10)
+                    .Table(table =>
+                    {
+                        table.ColumnsDefinition(columns =>
+                        {
+                            columns.RelativeColumn(2);
+                            columns.RelativeColumn(3);
+                            columns.RelativeColumn(3);
+                            columns.RelativeColumn(2);
+                        });
+
+                        // Header
+                        table.Header(header =>
+                        {
+                            header.Cell().Background("#f5f5f5").Padding(5).Text("Customer Name").Bold();
+                            header.Cell().Background("#f5f5f5").Padding(5).Text("Product Name").Bold();
+                            header.Cell().Background("#f5f5f5").Padding(5).Text("Order Date").Bold();
+                            header.Cell().Background("#f5f5f5").Padding(5).Text("Total Price").Bold();
+                        });
+
+                        // Data rows
+                        foreach (var customer in FilterOrders)
+                        {
+                            table.Cell().PaddingVertical(5).PaddingHorizontal(5).Text(customer.CustomerName);
+                            table.Cell().PaddingVertical(5).PaddingHorizontal(5).Text(customer.ProductName);
+                            table.Cell().PaddingVertical(5).PaddingHorizontal(5).Text(customer.OrderDate);
+                            table.Cell().PaddingVertical(5).PaddingHorizontal(5).Text($"৳{customer.TotalPrice:N2}");
+                        }
+
+                        // Total Row
+                        table.Cell().PaddingVertical(5).PaddingHorizontal(5).Text("").Bold(); 
+                        table.Cell().PaddingVertical(5).PaddingHorizontal(5).Text("").Bold(); 
+                        table.Cell().ColumnSpan(1).PaddingVertical(5).PaddingHorizontal(5).AlignRight().Text("Total").Bold();
+                        table.Cell().PaddingVertical(5).PaddingHorizontal(5).Text($"৳{FilterOrders.Sum(x => x.TotalPrice):N2}").Bold();
+
+                    });
+
+                page.Footer().Row(row =>
+                    {
+                        row.RelativeItem().AlignLeft().Text(DateTime.Now.ToString("dd/MM/yyyy HH:mm"));
+                        row.RelativeItem().AlignCenter().Text(text =>
+                        {
+                            text.CurrentPageNumber();
+                            text.Span(" / ");
+                            text.TotalPages();
+                        });
+                        row.RelativeItem(); // Empty space for right side (optional)
+                    });
+            });
+        });
+
+        using var stream = new MemoryStream();
+        document.GeneratePdf(stream);
+
+        var fileName = $"Orders_{DateTime.Now:yyyyMMddHHmmss}.pdf";
+        await JSRuntime.InvokeVoidAsync("downloadFile", fileName, "application/pdf", stream.ToArray());
+    }
+
+
+    void ComposeHeader(IContainer container)
+    {
+        var company = m_Lookup.GetCompanyInfo();
+
+        container.Row(row =>
+        {
+            row.RelativeItem().Column(column =>
+            {
+                column.Item().AlignCenter().Text($"{company.CompanyName}").Bold().FontSize(16);
+                column.Item().AlignCenter().Text($"{company.Address}").FontSize(10);
+                column.Item().AlignCenter().Text($"Orders Report").Bold().FontSize(10);
+            });
+        });
+    }
+
+}
