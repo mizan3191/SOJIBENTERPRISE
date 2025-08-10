@@ -63,7 +63,7 @@
                     {
                         SupplierId = purchase.SupplierId,
                         PurchaseId = purchase.Id,
-                        Date = DateTime.Now,
+                        Date = purchase.Date,
                         AmountPaid = purchase.DamageProductDueAdjustment,
                     };
 
@@ -85,7 +85,7 @@
                         BalanceIn = 0,
                         BalanceOut = purchase.TotalPay,
                         CurrentBalance = existCurrentBalance - purchase.TotalPay,
-                        Date = DateTime.Now,
+                        Date = purchase.Date,
                         PurchaseId = purchase.Id,
                         Resone = purchase.Supplier?.Name != null ? $"Purchase from {purchase.Supplier.Name}." : $"Purchase Payment",
                     };
@@ -134,6 +134,7 @@
                 existingPurchase.TotalPay = purchase.TotalPay;
                 existingPurchase.Comments = purchase.Comments;
                 existingPurchase.TotalDue = purchase.TotalDue;
+                existingPurchase.Date = purchase.Date;
                 existingPurchase.PurchaseDetails = purchase.PurchaseDetails;
 
                 var oldDetails = existingPurchaseData?.PurchaseDetails ?? new List<PurchaseDetail>();
@@ -182,6 +183,7 @@
 
                     existingPayment.PaymentMethod = purchase.PaymentMethod;
                     existingPayment.Number = purchase.Number;
+                    existingPayment.PaymentDate = purchase.Date;
                     existingPayment.Comments = purchase.Comments;
                     existingPayment.TransactionID = purchase.TransactionID;
                     existingPayment.AmountPaid = purchase.TotalPay;

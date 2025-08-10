@@ -73,7 +73,7 @@
                 // double totalDueBefore = payment.TotalDueAfterPayment;
                 double totalDueAfter = (payment.TotalDueAfterPayment + previousAmount) - SRDiscount.DiscountAmount;
 
-                payment.PaymentDate = DateTime.Now;
+                payment.PaymentDate = SRDiscount.Date;
                 payment.AmountPaid = SRDiscount.DiscountAmount;
                 //payment.TotalDueBeforePayment = totalDueBefore;
                 payment.TotalDueAfterPayment = totalDueAfter;
@@ -145,7 +145,7 @@
                 CustomerId = SRDiscount.DSRCustomerId,
                 OrderId = SRDiscount.OrderId,
                 SRDiscountId = SRDiscount.Id,
-                PaymentDate = DateTime.Now,
+                PaymentDate = SRDiscount.Date,
                 PaymentMethodId = 13,
                 TransactionID = string.Empty,
                 Number = string.Empty,

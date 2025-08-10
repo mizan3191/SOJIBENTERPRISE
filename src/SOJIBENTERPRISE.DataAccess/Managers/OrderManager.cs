@@ -44,7 +44,7 @@
                 {
                     CustomerId = order.CustomerId,
                     OrderId = order.Id,
-                    PaymentDate = DateTime.Now,
+                    PaymentDate = order.Date,
                     PaymentMethodId = order.PaymentMethodId,
                     //TransactionID = order.TransactionID,
                     //Number = order.Number,
@@ -71,7 +71,7 @@
                         BalanceIn = order.TotalPay,
                         BalanceOut = 0,
                         CurrentBalance = existCurrentBalance + order.TotalPay,
-                        Date = DateTime.Now,
+                        Date = order.Date,
                         OrderId = order.Id,
                         Resone = $"Sales Product",
                     };
@@ -187,6 +187,7 @@
                     existingOrder.TotalAmount = order.TotalAmount;
                     existingOrder.TotalPay = order.TotalPay;
                     existingOrder.TotalDue = order.TotalDue;
+                    existingOrder.Date = order.Date;
 
                     existingOrder.OrderDetails = order.OrderDetails;
 
@@ -238,7 +239,7 @@
                     {
                         existingPayment.CustomerId = order.CustomerId;
                         existingPayment.PaymentMethodId = order.PaymentMethodId;
-                        //existingPayment.Number = order.Number;
+                        existingPayment.PaymentDate = order.Date;
                         //existingPayment.TransactionID = order.TransactionID;
                         existingPayment.TotalAmountThisOrder = order.TotalAmount;
                         existingPayment.AmountPaid = order.TotalPay;
@@ -277,7 +278,7 @@
                         {
                             CustomerId = order.CustomerId,
                             OrderId = order.Id,
-                            PaymentDate = DateTime.Now,
+                            PaymentDate = order.Date,
                             PaymentMethodId = order.PaymentMethodId,
                             //TransactionID = order.TransactionID,
                             // Number = order.Number,

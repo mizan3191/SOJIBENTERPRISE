@@ -69,7 +69,7 @@
 
                 existingTransaction.BalanceIn = newAmountPaid;
                 existingTransaction.CurrentBalance = currentBalanceBeforeUpdate + difference;
-                existingTransaction.Date = DateTime.Now;
+                existingTransaction.Date = SRPaymentHistory.PaymentDate;
 
                 _dbContext.Update(existingTransaction);
                 _dbContext.SaveChanges();

@@ -89,7 +89,7 @@
                         CustomerId = DailyExpense.CustomerId,
                         OrderId = DailyExpense.OrderId,
                         DailyExpenseId = DailyExpense.Id,
-                        PaymentDate = DateTime.Now,
+                        PaymentDate = DailyExpense.Date,
                         PaymentMethodId = 15,
                         TransactionID = string.Empty,
                         Number = string.Empty,
@@ -117,7 +117,7 @@
                         BalanceIn = 0,
                         BalanceOut = DailyExpense.Amount,
                         CurrentBalance = existCurrentBalance - DailyExpense.Amount,
-                        Date = DateTime.Now,
+                        Date = DailyExpense.Date,
                         DailyExpenseId = DailyExpense.Id,
                         Resone = DailyExpense.DailyExpenseType?.Name != null ? DailyExpense.DailyExpenseType.Name : $"Daily Expense",
                     };
@@ -157,7 +157,7 @@
                         BalanceIn = 0,
                         BalanceOut = DailyExpense.Amount,
                         CurrentBalance = existCurrentBalance - DailyExpense.Amount,
-                        Date = DateTime.Now,
+                        Date = DailyExpense.Date,
                         DailyExpenseId = DailyExpense.Id,
                         Resone = DailyExpense.DailyExpenseType?.Name != null ? DailyExpense.DailyExpenseType.Name : $"Daily Expense",
                     };

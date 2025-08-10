@@ -31,7 +31,7 @@
 
                 existingTransaction.BalanceIn = newAmountPaid;
                 existingTransaction.CurrentBalance = currentBalanceBeforeUpdate + difference;
-                existingTransaction.Date = DateTime.Now;
+                existingTransaction.Date = DSRShopPaymentHistory.PaymentDate;
 
                 _dbContext.Update(existingTransaction);
                 _dbContext.SaveChanges();
@@ -102,7 +102,7 @@
                         BalanceIn = DSRShopPaymentHistory.AmountPaid,
                         BalanceOut = 0,
                         CurrentBalance = existCurrentBalance + DSRShopPaymentHistory.AmountPaid,
-                        Date = DateTime.Now,
+                        Date = DSRShopPaymentHistory.PaymentDate,
                         DSRShopPaymentHistoryId = DSRShopPaymentHistory.Id,
                         Resone = DSRShopPaymentHistory.Shop?.Name != null ? $"{DSRShopPaymentHistory.Shop.Name} Shop Paid " : $"Shop Payment",
                     };

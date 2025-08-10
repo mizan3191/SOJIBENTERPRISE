@@ -43,7 +43,7 @@
                     // double totalDueBefore = payment.TotalDueAfterPayment;
                     double totalDueAfter = (payment.TotalDueAfterPayment + previousAmount) - OrderPaymentHistory.AmountPaid;
 
-                    payment.PaymentDate = DateTime.Now;
+                    payment.PaymentDate = OrderPaymentHistory.Date;
                     payment.AmountPaid = OrderPaymentHistory.AmountPaid;
                     //payment.TotalDueBeforePayment = totalDueBefore;
                     payment.TotalDueAfterPayment = totalDueAfter;
@@ -60,7 +60,7 @@
 
                 existingTransaction.BalanceIn = newAmountPaid;
                 existingTransaction.CurrentBalance = currentBalanceBeforeUpdate + difference;
-                existingTransaction.Date = DateTime.Now;
+                existingTransaction.Date = OrderPaymentHistory.Date;
 
                 _dbContext.Update(existingTransaction);
                 _dbContext.SaveChanges();
@@ -193,7 +193,7 @@
                     CustomerId = OrderPaymentHistory.DSRCustomerId,
                     OrderId = OrderPaymentHistory.OrderId,
                     OrderPaymentHistoryId = OrderPaymentHistory.Id,
-                    PaymentDate = DateTime.Now,
+                    PaymentDate = OrderPaymentHistory.Date,
                     PaymentMethodId = 10,
                     TransactionID = string.Empty,
                     Number = string.Empty,
@@ -220,7 +220,7 @@
                         BalanceIn = OrderPaymentHistory.AmountPaid,
                         BalanceOut = 0,
                         CurrentBalance = existCurrentBalance + OrderPaymentHistory.AmountPaid,
-                        Date = DateTime.Now,
+                        Date = OrderPaymentHistory.Date,
                         OrderPaymentHistoryId = OrderPaymentHistory.Id,
                         Resone = "DRS Payment",
                     };

@@ -93,7 +93,7 @@
 
                 customerPayment.TotalDueBeforePayment = totalDueBefore;
                 customerPayment.TotalDueAfterPayment = totalDueAfter;
-                customerPayment.PaymentDate = DateTime.Now;
+                customerPayment.PaymentDate = customerPayment.PaymentDate;
 
                 AddUpdateEntity(customerPayment);
 
@@ -111,7 +111,7 @@
                         BalanceIn = customerPayment.AmountPaid,
                         BalanceOut = 0,
                         CurrentBalance = existCurrentBalance + customerPayment.AmountPaid,
-                        Date = DateTime.Now,
+                        Date = customerPayment.PaymentDate,
                         CustomerPaymentHistoryId = customerPayment.Id,
                         Resone = customerPayment.Customer?.Name != null ? $"Customer Due Payment By {customerPayment.Customer.Name}." : $"Customer Due Payment",
                     };
@@ -158,7 +158,7 @@
 
                 customerPayment.TotalDueBeforePayment = totalDueBefore;
                 customerPayment.TotalDueAfterPayment = totalDueAfter;
-                customerPayment.PaymentDate = DateTime.Now;
+                customerPayment.PaymentDate = customerPayment.PaymentDate;
 
                 //AddUpdateEntity(customerPayment);
                 _dbContext.Update(customerPayment);
@@ -173,7 +173,7 @@
 
                 existingTransaction.BalanceIn = newAmountPaid;
                 existingTransaction.CurrentBalance = currentBalanceBeforeUpdate + difference;
-                existingTransaction.Date = DateTime.Now;
+                existingTransaction.Date = customerPayment.PaymentDate;
 
                 _dbContext.Update(existingTransaction);
                 _dbContext.SaveChanges();

@@ -30,7 +30,6 @@
         public async Task<IList<Supplier>> GetAllSupplier()
         {
             return await _dbContext.Suppliers
-                .Where(x => !x.IsDisable)
                 .OrderBy(c => c.Name)
                 .ToListAsync();
         }
@@ -108,7 +107,7 @@
 
                 supplierPayment.TotalDueBeforePayment = totalDueBefore;
                 supplierPayment.TotalDueAfterPayment = totalDueAfter;
-                supplierPayment.PaymentDate = DateTime.Now;
+                supplierPayment.PaymentDate = supplierPayment.PaymentDate;
 
                 AddUpdateEntity(supplierPayment);
 
@@ -127,7 +126,7 @@
                         BalanceIn = 0,
                         BalanceOut = supplierPayment.AmountPaid,
                         CurrentBalance = existCurrentBalance - supplierPayment.AmountPaid,
-                        Date = DateTime.Now,
+                        Date = supplierPayment.PaymentDate,
                         SupplierPaymentHistoryId = supplierPayment.Id,
                         Resone = supplierPayment.Supplier?.Name != null ? $"Paid the supplier duo to {supplierPayment.Supplier.Name}." : $"Supplier Due Payment",
                     };
@@ -168,7 +167,7 @@
 
                 supplierPayment.TotalDueBeforePayment = totalDueBefore;
                 supplierPayment.TotalDueAfterPayment = totalDueAfter;
-                supplierPayment.PaymentDate = DateTime.Now;
+                supplierPayment.PaymentDate = supplierPayment.PaymentDate;
 
 
                 _dbContext.Update(supplierPayment);

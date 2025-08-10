@@ -26,7 +26,7 @@
                     CustomerId = DSRShopDue.DSRCustomerId.Value,
                     OrderId = DSRShopDue.OrderId,
                     DSRShopDueId = DSRShopDue.Id,
-                    PaymentDate = DateTime.Now,
+                    PaymentDate = DSRShopDue.Date,
                     PaymentMethodId = 14,
                     TransactionID = string.Empty,
                     Number = string.Empty,
@@ -63,7 +63,7 @@
                 {
                     double totalDueAfter = (payment.TotalDueAfterPayment + previousAmount) - DSRShopDue.DueAmount;
 
-                    payment.PaymentDate = DateTime.Now;
+                    payment.PaymentDate = DSRShopDue.Date;
                     payment.AmountPaid = DSRShopDue.DueAmount;
                     payment.TotalDueAfterPayment = totalDueAfter;
                 }

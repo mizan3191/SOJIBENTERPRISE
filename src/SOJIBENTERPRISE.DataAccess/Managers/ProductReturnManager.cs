@@ -73,7 +73,7 @@
                     CustomerId = customerProductReturn.CustomerId,
                     OrderId = customerProductReturn.OrderId,
                     CustomerProductReturnId = returnId,
-                    PaymentDate = DateTime.Now,
+                    PaymentDate = customerProductReturn.Date,
                     PaymentMethodId = 11,
                     TransactionID = string.Empty,
                     Number = string.Empty,
@@ -148,7 +148,7 @@
                     return false;
 
                 // Update main return entity
-                existingReturn.Date = DateTime.UtcNow;
+                existingReturn.Date = customerProductReturn.Date;
                 existingReturn.TotalAmount = customerProductReturn.TotalAmount;
                 existingReturn.PaymentMethod = customerProductReturn.PaymentMethod;
 
@@ -164,7 +164,7 @@
                     double totalDueBefore = payment.TotalDueBeforePayment;
                     double totalDueAfter = totalDueBefore - customerProductReturn.TotalAmount;
 
-                    payment.PaymentDate = DateTime.Now;
+                    payment.PaymentDate = customerProductReturn.Date;
                     payment.AmountPaid = customerProductReturn.TotalAmount;
                     payment.TotalDueAfterPayment = totalDueAfter;
                 }

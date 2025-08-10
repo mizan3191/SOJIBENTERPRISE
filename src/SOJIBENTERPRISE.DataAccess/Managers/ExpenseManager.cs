@@ -65,7 +65,7 @@
                         BalanceIn = 0,
                         BalanceOut = expense.Amount,
                         CurrentBalance = existCurrentBalance - expense.Amount,
-                        Date = DateTime.Now,
+                        Date = expense.ExpenseDate,
                         ExpenseId = expense.Id,
                         Resone = "Expense",
                     };

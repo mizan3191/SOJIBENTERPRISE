@@ -29,7 +29,7 @@ namespace SOJIBENTERPRISE.DataAccess
                         BalanceIn = DamageProductHandoverPaymentHistory.AmountPaid,
                         BalanceOut = 0,
                         CurrentBalance = existCurrentBalance + DamageProductHandoverPaymentHistory.AmountPaid,
-                        Date = DateTime.Now,
+                        Date = DamageProductHandoverPaymentHistory.Date,
                         DamageProductHandoverPaymentHistoryId = DamageProductHandoverPaymentHistory.Id,
                         Resone = "Damage Product Due Payment",
                     };
@@ -72,7 +72,7 @@ namespace SOJIBENTERPRISE.DataAccess
 
                 existingTransaction.BalanceIn = newAmountPaid;
                 existingTransaction.CurrentBalance = currentBalanceBeforeUpdate + difference;
-                existingTransaction.Date = DateTime.Now;
+                existingTransaction.Date = DamageProductHandoverPaymentHistory.Date;
 
                 _dbContext.Update(existingTransaction);
                 _dbContext.SaveChanges();
