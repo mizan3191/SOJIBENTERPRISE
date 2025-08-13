@@ -284,6 +284,7 @@
         {
             try
             {
+                // Get the order with details
                 Order order = await _dbContext.Orders
                     .Include(o => o.OrderDetails)
                     .FirstOrDefaultAsync(o => o.Id == orderId);
@@ -291,27 +292,88 @@
                 if (order == null)
                     return null;
 
-                CustomerProductReturn customerProductReturn = new()
-                {
-                    OrderId = order.Id,
-                    CustomerId = order.CustomerId,
-                    Date = DateTime.UtcNow,
-                    PaymentMethod = "Product Return",
-                    TotalAmount = order.TotalAmount,
-                    CustomerProductReturnDetails = order.OrderDetails.Select(od => new CustomerProductReturnDetails
-                    {
-                        Id = od.Id,
-                        ProductId = od.ProductId,
-                        UnitPrice = od.UnitPrice,
-                        Quantity = od.Quantity,
-                        ReturnQuantity = 0, // Assuming full return initially
-                        Price = od.Price,
-                        ReturnPrice = 0,       // Assuming full refund initially
-                        Discount = od.Discount
-                    }).ToList()
-                };
+                // Check for existing returns for this order
+                var existingReturn = await _dbContext.CustomerProductReturns
+                    .Include(r => r.CustomerProductReturnDetails)
+                    .FirstOrDefaultAsync(r => r.OrderId == orderId);
 
-                return customerProductReturn;
+                if (existingReturn == null)
+                {
+                    // No existing return - create new one with all products
+                    CustomerProductReturn customerProductReturn = new()
+                    {
+                        OrderId = order.Id,
+                        CustomerId = order.CustomerId,
+                        Date = DateTime.UtcNow,
+                        PaymentMethod = "Product Return",
+                        TotalAmount = order.TotalAmount,
+                        CustomerProductReturnDetails = order.OrderDetails.Select(od => new CustomerProductReturnDetails
+                        {
+                            ProductId = od.ProductId,
+                            UnitPrice = od.UnitPrice,
+                            Quantity = od.Quantity,
+                            ReturnQuantity = 0, // Initialize with 0 return quantity
+                            Price = od.Price,
+                            ReturnPrice = 0,
+                            Discount = od.Discount
+                        }).ToList()
+                    };
+                    return customerProductReturn;
+                }
+                else
+                {
+                    // Existing return found - update it with current order details
+                    existingReturn.Date = DateTime.UtcNow;
+                    existingReturn.TotalAmount = order.TotalAmount;
+
+                    // Get list of product IDs in current order
+                    var currentOrderProductIds = order.OrderDetails.Select(od => od.ProductId).ToList();
+
+                    // Find return details to remove (products no longer in the order)
+                    var detailsToRemove = existingReturn.CustomerProductReturnDetails
+                        .Where(rd => !currentOrderProductIds.Contains(rd.ProductId))
+                        .ToList();
+
+                    // Remove them one by one
+                    foreach (var detail in detailsToRemove)
+                    {
+                        existingReturn.CustomerProductReturnDetails.Remove(detail);
+                    }
+
+                    // Process each order detail to update return details
+                    foreach (var orderDetail in order.OrderDetails)
+                    {
+                        var existingReturnDetail = existingReturn.CustomerProductReturnDetails
+                            .FirstOrDefault(rd => rd.ProductId == orderDetail.ProductId);
+
+                        if (existingReturnDetail == null)
+                        {
+                            // New product in order - add to return details
+                            existingReturn.CustomerProductReturnDetails.Add(new CustomerProductReturnDetails
+                            {
+                                ProductId = orderDetail.ProductId,
+                                UnitPrice = orderDetail.UnitPrice,
+                                Quantity = orderDetail.Quantity,
+                                ReturnQuantity = 0, // Initialize with 0 return quantity
+                                Price = orderDetail.Price,
+                                ReturnPrice = 0,
+                                Discount = orderDetail.Discount
+                            });
+                        }
+                        else
+                        {
+                            // Existing product - update quantities and prices
+                            existingReturnDetail.Quantity = orderDetail.Quantity;
+                            existingReturnDetail.UnitPrice = orderDetail.UnitPrice;
+                            existingReturnDetail.Price = orderDetail.Price;
+                            existingReturnDetail.Discount = orderDetail.Discount;
+
+                            // Don't modify ReturnQuantity as it might have previous returns
+                        }
+                    }
+
+                    return existingReturn;
+                }
             }
             catch (Exception ex)
             {

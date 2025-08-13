@@ -341,18 +341,9 @@
 
     private async Task LoadExistingOrder(int orderId, int id)
     {
-        if (id > 0)
+        if(orderId>0)
         {
-            CustomerProductReturn = await m_ProductReturn.GetCustomerProductReturnById(id);
-        }
-        else
-        {
-            CustomerProductReturn = await m_ProductReturn.GetExistingCustomerProductReturnByOrderId(orderId);
-
-            if (CustomerProductReturn is null)
-            {
-                CustomerProductReturn = await m_ProductReturn.GetCustomerProductReturnByOrderId(orderId);
-            }
+            CustomerProductReturn = await m_ProductReturn.GetCustomerProductReturnByOrderId(orderId);
         }
 
         if (CustomerProductReturn != null)

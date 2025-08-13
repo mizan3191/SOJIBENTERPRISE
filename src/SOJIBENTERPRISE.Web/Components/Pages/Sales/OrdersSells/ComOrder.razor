@@ -566,12 +566,15 @@
                     orderDetail.UnitofPrice = selectedProduct.SellingPrice;
                     orderDetail.BuyingPrice = selectedProduct.BuyingPrice;
                     orderDetail.StockQty = selectedProduct.StockQty;
+                    orderDetail.CartunUnit = selectedProduct.CartunToPiece;
+                    orderDetail.BoxUnit = selectedProduct.BoxToPiece;
 
                     var totalPrice = selectedProduct.SellingPrice * orderDetail.Quantity;
                     orderDetail.DiscountAmount = totalPrice * (orderDetail.Discount / 100);
                     orderDetail.Price = totalPrice - orderDetail.DiscountAmount;
 
                     CalculateTotalPay();
+                    CalculatePackagingQuantities(orderDetail);
 
                     if (selectedProduct.IsFreeProductOffer)
                     {
@@ -615,6 +618,7 @@
             //orderDetail.Price = totalPrice - orderDetail.DiscountAmount;
 
             CalculateTotalPay();
+            CalculatePackagingQuantities(orderDetail);
 
             if (selectedProduct.IsFreeProductOffer && orderDetail.FreeProductOffer is not null)
             {
