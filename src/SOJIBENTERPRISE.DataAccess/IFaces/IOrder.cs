@@ -12,6 +12,7 @@
         PersonInfoDTO GetPersonInfo(int personId);
         IEnumerable<OrdersByPersonDTO> GetAllOrdersByPerson(int personId);
         IEnumerable<OrderDetailsDTO> GetOrderDetailsByOrderId(int orderId);
+        Task<IEnumerable<ExistingOrderDTO>> GetExistingOrderById(int orderId);
         Task<IEnumerable<OrderDetailsDTO>> GetOrderDetailsByOrderAsync(int orderId);
         Task<IEnumerable<DamageProductDetailsDTO>> GetDamageProductDetailsByOrderAsync(int orderId);
         IEnumerable<CustomerDueDTO> GetCustomerDueHistory();

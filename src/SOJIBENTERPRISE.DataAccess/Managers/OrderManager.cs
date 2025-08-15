@@ -571,6 +571,20 @@
             }
         }
 
+        public async Task<IEnumerable<ExistingOrderDTO>> GetExistingOrderById(int orderId)
+        {
+            return await _dbContext.OrderDetails
+                    .AsNoTracking()
+                    .Where(x => x.OrderId == orderId)
+                    .Select(x => new ExistingOrderDTO
+                    {
+                        Id = x.Id,
+                        ProductId = x.ProductId,
+                        StockQty = x.Quantity
+                    })
+                    .ToListAsync();
+        }
+
         public async Task<IEnumerable<OrderDetailsDTO>> GetOrderDetailsByOrderAsync(int orderId)
         {
             try

@@ -13,6 +13,13 @@
         public double? Discount { get; set; }
     }
 
+    public class ExistingOrderDTO
+    {
+        public int Id { get; set; }
+        public int ProductId { get; set; }
+        public int StockQty { get; set; }
+    }
+
     public class DamageProductDetailsDTO
     {
         public string ProductName { get; set; }

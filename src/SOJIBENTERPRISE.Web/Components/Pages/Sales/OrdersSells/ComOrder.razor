@@ -384,6 +384,8 @@
     private IEnumerable<Lov> ShippingMethodList { get; set; } = new List<Lov>();
     private IEnumerable<Lovd> CustomerList { get; set; } = new List<Lovd>();
     private IEnumerable<Lov> CategoryList { get; set; } = new List<Lov>();
+    private IEnumerable<ExistingOrderDTO> ExistingOrderStockList { get; set; } = new List<ExistingOrderDTO>();
+
 
     List<string> selectedRoad = new();
 
@@ -605,9 +607,12 @@
         }
 
         var selectedProduct = AllProducts.FirstOrDefault(p => p.Id == orderDetail.ProductId);
-        if (selectedProduct.StockQty < orderDetail.Quantity)
+        var existingStock = ExistingOrderStockList.FirstOrDefault(e => e.ProductId == orderDetail.ProductId);
+        var stockQty = existingStock?.StockQty + selectedProduct?.StockQty;
+
+        if (stockQty < orderDetail.Quantity)
         {
-            notificationComponent.Show("Updated Summary", $"The {selectedProduct.Name} is currently unavailable!", NotificationSeverity.Warning);
+            notificationComponent.Show("Updated Summary", $"The {selectedProduct.Name} ({stockQty}) is out of stock.", NotificationSeverity.Warning);
         }
 
         if (selectedProduct != null)
@@ -693,9 +698,11 @@
         foreach (var product in Order.OrderDetails)
         {
             var selectedProduct = AllProducts.FirstOrDefault(p => p.Id == product.ProductId);
-            if (selectedProduct.StockQty < product.Quantity)
+            var existingStock = ExistingOrderStockList.FirstOrDefault(e => e.ProductId == product.ProductId);
+            var stockQty = existingStock?.StockQty + selectedProduct?.StockQty;
+            if (stockQty < product.Quantity)
             {
-                notificationComponent.Show("Updated Summary", $"The {selectedProduct.Name} is currently unavailable!", NotificationSeverity.Warning);
+                notificationComponent.Show("Updated Summary", $"The {selectedProduct?.Name} ({stockQty}) is out of stock.", NotificationSeverity.Warning);
                 return;
             }
         }
@@ -729,6 +736,7 @@
     private async Task LoadExistingOrder(int orderId)
     {
         var existingOrder = await m_Order.GetOrderById(orderId);
+        ExistingOrderStockList = await m_Order.GetExistingOrderById(orderId);
 
         if (existingOrder != null)
         {
