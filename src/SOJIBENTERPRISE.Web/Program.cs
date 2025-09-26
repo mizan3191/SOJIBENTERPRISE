@@ -1,8 +1,5 @@
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage;
-using QuestPDF.Infrastructure;
-using Radzen;
-using SOJIBENTERPRISE.Web.Components;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -33,6 +30,7 @@ builder.Services.AddControllers();
 
 #region Services
 
+builder.Services.AddScoped<DialogService>();
 builder.Services.AddScoped<NotificationService>();
 builder.Services.AddScoped<IAccount, AccountManager>();
 builder.Services.AddScoped<ICustomer, CustomerManager>();

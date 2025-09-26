@@ -3,10 +3,9 @@
     public class ProductConsumptionDTO
     {
         public int Id { get; set; } // Primary Key     
-        public int QuantityConsumed { get; set; }
+        public double Amount { get; set; }
         public string ReasonOfConsumed { get; set; }
         public DateTime DateConsumed { get; set; }
-        public string ProductName { get; set; }
-        public string Person { get; set; }
+        public string Comment { get; set; }
     }
 }

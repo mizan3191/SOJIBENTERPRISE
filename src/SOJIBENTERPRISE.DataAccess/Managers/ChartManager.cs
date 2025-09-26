@@ -92,7 +92,7 @@
                                 select new
                                 {
                                     Date = o.Date.Date,
-                                    Profit = totalCost - o.Discount
+                                    Profit = totalCost
                                 })
                                 .ToList();
 
@@ -237,13 +237,13 @@
                                 join d in _dbContext.OrderDetails on o.Id equals d.OrderId
                                 join p in _dbContext.Products on d.ProductId equals p.Id
                                 where o.Date >= startDate && o.Date < endDate && !o.IsDeleted
-                                group new { d, p, o } by new { o.Date.Year, o.Date.Month, o.Id, o.Discount } into g
+                                group new { d, p, o } by new { o.Date.Year, o.Date.Month, o.Id} into g
                                 select new
                                 {
                                     Year = g.Key.Year,
                                     Month = g.Key.Month,
                                     OrderId = g.Key.Id,
-                                    TotalProfit = g.Sum(x => (x.d.Quantity - (x.d.ReturnQuantity ?? 0)) * (x.d.UnitPrice - x.d.BuyingPrice)) - g.Key.Discount
+                                    TotalProfit = g.Sum(x => (x.d.Quantity - (x.d.ReturnQuantity ?? 0)) * (x.d.UnitPrice - x.d.BuyingPrice))
                                 })
                     .GroupBy(x => new { x.Year, x.Month })
                     .Select(g => new
@@ -348,5 +348,50 @@
 
             return result;
         }
+
+
+        public IList<BarGraphDTO> GetLast30DaysSalesHistory(int supplierId)
+        {
+            var toDate = DateTime.Now.Date.AddDays(1);
+            var fromDate = toDate.AddDays(-30);
+
+            // Step 1: Perform group and sum in SQL
+            var salesRaw = _dbContext.OrderDetails
+                .Where(od => od.Order.Date >= fromDate
+                && od.Order.Date <= toDate && !od.Order.IsDeleted
+                && od.Product.SupplierId == supplierId)
+                .GroupBy(od => od.Order.Date.Date) // Group by date only
+                .Select(g => new
+                {
+                    Date = g.Key,
+                    Amount = g.Sum(x => (x.Quantity - (x.ReturnQuantity ?? 0)) * x.UnitPrice)
+                })
+                .ToList(); // Bring data into memory
+
+            // 🔁 Return early if no data
+            if (salesRaw == null || !salesRaw.Any())
+                return new List<BarGraphDTO>();
+
+            // Step 2: Create all last 30 days
+            var allDates = Enumerable.Range(0, 30)
+                .Select(i => toDate.AddDays(-i))
+                .OrderBy(d => d)
+                .ToList();
+
+            // Step 3: Merge raw data with date list
+            var result = allDates.Select(d =>
+            {
+                var match = salesRaw.FirstOrDefault(x => x.Date.Date == d.Date);
+                return new BarGraphDTO
+                {
+                    MonthName = d.ToString("MMM dd"), // Show month and day
+                    Amount = Math.Round((decimal)(match?.Amount ?? 0), 2)
+                };
+            }).ToList();
+
+            return result;
+        }
+
+
     }
 }

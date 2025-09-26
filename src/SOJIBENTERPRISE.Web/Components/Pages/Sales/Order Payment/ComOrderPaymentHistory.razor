@@ -64,25 +64,12 @@ else
                 <EditForm Model="@OrderPaymentHistory" OnValidSubmit="HandleSubmit">
                     <div class="card dataForm ">
                         <div class="row m-3">
-                            @* <div class="col-md-4 mb-3">
-                                <label class="Asterisk form-label">Issued By</label>
-                                <RadzenDropDown @bind-Value="OrderPaymentHistory.CustomerId"
-                                                Data="@CustomerList"
-                                                TextProperty="Name"
-                                                ValueProperty="Id"
-                                                Placeholder="Search"
-                                                Class="w-100"
-                                                AllowClear="true"
-                                                AllowFiltering="true"
-                                                FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" />
-                            </div> *@
+                            
                             <div class="col-md-4 mb-3">
                                 <label class="Asterisk form-label">Due Amount</label>
                                 <InputNumber @bind-Value="DueAmount" class="form-control" disabled></InputNumber>
                             </div>
-                       @*  </div>
-
-                        <div class="row m-3"> *@
+                       
                             <div class="col-md-4 mb-3">
                                 <label class="Asterisk form-label">Amount</label>
                                 <InputNumber @bind-Value="OrderPaymentHistory.AmountPaid" class="form-control"></InputNumber>
@@ -135,13 +122,8 @@ else
 
     private Message notificationComponent;
 
-    private IEnumerable<SRDiscount> SRDiscountList { get; set; } = new List<SRDiscount>();
-    private IEnumerable<DamageProductDetailsDTO> DamageProductDetails { get; set; } = new List<DamageProductDetailsDTO>();
     public IEnumerable<DSRShopDue> DSRShopDueList { get; set; } = new List<DSRShopDue>();
     public IEnumerable<DailyExpense> DailyExpenseList { get; set; } = new List<DailyExpense>();
-
-
-    private IEnumerable<Lovd> CustomerList { get; set; } = new List<Lovd>();
     private IEnumerable<OrderPaymentHistory> OrderPaymentHistoryByOrderList { get; set; } = new List<OrderPaymentHistory>();
 
     public OrderPaymentHistory OrderPaymentHistory { get; set; } = new();
@@ -151,16 +133,11 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        CustomerList = await m_Lookup.GetAllCustomerList();
-
-        //CustomerList = CustomerList.Where(c => !c.IsDeleted);
-
         await LoadData();
     }
 
     private async Task HandleSubmit()
     {
-
         if (OrderPaymentHistory.AmountPaid <= 0)
         {
             notificationComponent.Show("Empty Amount", "Discount Amount can not be 0.", NotificationSeverity.Warning);
@@ -172,12 +149,6 @@ else
             notificationComponent.Show("Empty DSR Customer", "DSR Customer are not valid.", NotificationSeverity.Warning);
             return;
         }
-
-        // if (OrderPaymentHistory.CustomerId <= 0)
-        // {
-        //     notificationComponent.Show("Empty Customer", "Issued by are not valid.", NotificationSeverity.Warning);
-        //     return;
-        // }
 
         showModal = false;
 
@@ -248,21 +219,21 @@ else
     {
         OrderPaymentHistoryByOrderList = await m_OrderPaymentHistory.GetAllOrderPaymentHistoryByOrderId(OrderId);
 
-        var OrderDetails = await m_Order.GetOrderDetailsByOrderAsync(OrderId) ?? new List<OrderDetailsDTO>();
-        SRDiscountList = await m_SRDiscount.GetAllSRDiscountByOrderId(OrderId);
+        var totalPrice = m_Order.GetOrderAmount(OrderId) ;
+        //SRDiscountList = await m_SRDiscount.GetAllSRDiscountByOrderId(OrderId);
         DSRShopDueList = await m_DSRShopDue.GetAllDSRShopDue(OrderId);
-        DamageProductDetails = await m_Order.GetDamageProductDetailsByOrderAsync(OrderId) ?? new List<DamageProductDetailsDTO>();
+        //DamageProductDetails = await m_Order.GetDamageProductDetailsByOrderAsync(OrderId) ?? new List<DamageProductDetailsDTO>();
         DailyExpenseList = m_DailyExpense.GetAllDailyExpense(OrderId);
 
 
-        var totalPrice = OrderDetails.Sum(od => od.TotalPrice);
-        var totalDamagePrice = DamageProductDetails?.Sum(od => od.TotalPrice) ?? 0;
-        var srDiscountAmount = SRDiscountList.Sum(x => x.DiscountAmount);
+        //var totalPrice = OrderDetails.Sum(od => od.TotalPrice);
+        //var totalDamagePrice = DamageProductDetails?.Sum(od => od.TotalPrice) ?? 0;
+        //var srDiscountAmount = SRDiscountList.Sum(x => x.DiscountAmount);
         var dsrShopDueList = DSRShopDueList.Sum(x => x.DueAmount);
         var dailyExpenseList = DailyExpenseList.Sum(x => x.Amount);
         var currentlyPaid = OrderPaymentHistoryByOrderList.Sum(x => x.AmountPaid);
 
-        var TotalPaid = totalDamagePrice + srDiscountAmount + dsrShopDueList + dailyExpenseList + currentlyPaid;
+        var TotalPaid = dsrShopDueList + dailyExpenseList + currentlyPaid;
         DueAmount = totalPrice - TotalPaid;
 
     }

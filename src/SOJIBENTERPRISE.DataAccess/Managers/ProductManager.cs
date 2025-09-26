@@ -205,9 +205,9 @@ namespace SOJIBENTERPRISE.DataAccess
         {
             try
             {
-                var entity = _dbContext.Products.FirstOrDefault(x => x.Id == ProductConsumption.ProductId);
-                var Adjustment = _dbContext.ProductConsumptions.AsNoTracking().FirstOrDefault(x => x.Id == ProductConsumption.Id).QuantityConsumed;
-                entity.StockQty = (entity.StockQty + Adjustment) - ProductConsumption.QuantityConsumed;
+               // var entity = _dbContext.Products.FirstOrDefault(x => x.Id == ProductConsumption.ProductId);
+              //  var Adjustment = _dbContext.ProductConsumptions.AsNoTracking().FirstOrDefault(x => x.Id == ProductConsumption.Id).QuantityConsumed;
+               // entity.StockQty = (entity.StockQty + Adjustment) - ProductConsumption.QuantityConsumed;
 
                 AddUpdateEntity(ProductConsumption);
                 _dbContext.SaveChanges();
@@ -228,9 +228,9 @@ namespace SOJIBENTERPRISE.DataAccess
                 _dbContext.ProductConsumptions.Add(ProductConsumption);
                 _dbContext.SaveChanges();
 
-                var entity = _dbContext.Products.FirstOrDefault(x => x.Id == ProductConsumption.ProductId);
-                entity.StockQty = entity.StockQty - ProductConsumption.QuantityConsumed;
-                _dbContext.SaveChanges();
+               // var entity = _dbContext.Products.FirstOrDefault(x => x.Id == ProductConsumption.ProductId);
+               // entity.StockQty = entity.StockQty - ProductConsumption.QuantityConsumed;
+               // _dbContext.SaveChanges();
 
                 return ProductConsumption.Id;
             }
@@ -247,10 +247,11 @@ namespace SOJIBENTERPRISE.DataAccess
             {
                 var productConsumption = _dbContext.ProductConsumptions.FirstOrDefault(x => x.Id == id);
 
-                var entity = _dbContext.Products.FirstOrDefault(x => x.Id == productConsumption.ProductId);
-                entity.StockQty = entity.StockQty + productConsumption.QuantityConsumed;
+                productConsumption.IsDeleted = true;
+                //var entity = _dbContext.Products.FirstOrDefault(x => x.Id == productConsumption.ProductId);
+                //entity.StockQty = entity.StockQty + productConsumption.QuantityConsumed;
 
-                _dbContext.Remove(productConsumption);
+                _dbContext.Update(productConsumption);
                 _dbContext.SaveChanges();
 
                 return true;
@@ -289,19 +290,15 @@ namespace SOJIBENTERPRISE.DataAccess
 
 
                 return await _dbContext.ProductConsumptions
-                    .Include(x => x.Product)
-                    .ThenInclude(x => x.ProductsSize)
-                    .Include(x => x.Customer)
                     .Include(x => x.ReasonofAdjustment)
                     .Where(x => !x.IsDeleted && x.DateConsumed.Date >= fromDate && x.DateConsumed.Date <= toDate)
                     .Select(x => new ProductConsumptionDTO
                     {
                         Id = x.Id,
-                        QuantityConsumed = x.QuantityConsumed,
+                        Amount = x.Amount,
                         ReasonOfConsumed = x.ReasonofAdjustment.Name,
                         DateConsumed = x.DateConsumed,
-                        Person = x.Customer != null ? x.Customer.Name : string.Empty,
-                        ProductName = x.Product != null ? x.Product.DisplayNameSize : string.Empty
+                        Comment = x.Comments,
                     })
                     .OrderByDescending(x => x.Id)
                     .ToListAsync();

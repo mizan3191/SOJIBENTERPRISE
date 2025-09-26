@@ -78,7 +78,7 @@ else
                         <RadzenButton Icon="description" ButtonStyle="ButtonStyle.Info" Size="ButtonSize.Small"
                                       Click="() => OrderDetails(order.Id, order.CustomerId)" style="margin-right: 5px;" title="Details" />
 
-                        <RadzenButton Icon="report_problem" ButtonStyle="ButtonStyle.Danger" Size="ButtonSize.Small"
+                        @* <RadzenButton Icon="report_problem" ButtonStyle="ButtonStyle.Danger" Size="ButtonSize.Small"
                                       Click="() => DamageProduct(order.Id, order.CustomerId)" style="margin-right: 5px;" title="Damage Product" />
 
                         <RadzenButton Icon="undo" ButtonStyle="ButtonStyle.Secondary" Size="ButtonSize.Small"
@@ -86,7 +86,7 @@ else
 
                         <RadzenButton Icon="local_offer" ButtonStyle="ButtonStyle.Success" Size="ButtonSize.Small"
                                       Click="() => SRDiscount(order.Id, order.CustomerId)" style="margin-right: 5px;" title="SR Discount" />
-
+ *@
                         <RadzenButton Icon="account_balance" ButtonStyle="ButtonStyle.Dark" Size="ButtonSize.Small"
                                       Click="() => ShopDue(order.Id, order.CustomerId)" style="margin-right: 5px;" title="Shop Dues" />
 
@@ -102,7 +102,88 @@ else
     </div>
 }
 
+
+
+@if (showModal)
+{
+    <div class="modal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="1" style="display:block">
+        <div class="modal-dialog modal-lg modal-dialog-scrollable modal-dialog-centered">
+            <div class="modal-content card dataFormPop">
+                <div class="modal-header">
+                    <h3>@(Order.Id > 0 ? "Edit Order" : "Add Order")</h3>
+                </div>
+
+                <EditForm Model="@Order" OnValidSubmit="HandleSubmit">
+                    <div class="card dataForm ">
+                        <div class="row m-3 ">
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">DSR</label>
+                                <RadzenDropDown @bind-Value="Order.CustomerId"
+                                                Data="@CustomerList"
+                                                TextProperty="Name"
+                                                ValueProperty="Id"
+                                                Placeholder="Search Customer"
+                                                Class="w-100"
+                                                AllowFiltering="true"
+                                                FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" />
+                            </div>
+
+                            <div class="col-md-4 mb-3">
+                                <label for="deliveryRoad" class="form-label">Delivery Road</label>
+                                <div class="select-all-dropdown">
+                                    <RadzenDropDown @bind-Value="@selectedRoad"
+                                                    Data="@RoadList"
+                                                    TextProperty="Name"
+                                                    ValueProperty="Name"
+                                                    Placeholder="Search Roads"
+                                                    FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
+                                                    AllowFiltering="true"
+                                                    AllowClear="true"
+                                                    Multiple="true"
+                                                    SelectAllText="Select All Roads"
+                                                    Chips=true
+                                                    Style="width: 100%;" />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row m-3 ">
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">Date</label>
+                                <RadzenDatePicker @bind-Value="Order.Date" DateFormat="yyyy-MM-dd" Class="w-100" />
+                            </div>
+
+                            <div class="col-md-4 mb-3">
+                                <label for="totalAmount" class="form-label">Amount</label>
+                                <input id="totalAmount" type="number" class="form-control" @bind="Order.TotalAmount" />
+                            </div>
+
+                            <div class="col-md-8 mb-3">
+                                <label>Comments</label>
+                                <InputText @bind-Value="Order.Comments" class="form-control"></InputText>
+                            </div>
+                        </div>
+                        <br />
+                        <div class="col-md-12">
+                            <RadzenButton Text="Save" ButtonStyle="ButtonStyle.Primary" Type="submit" Class="m-2" />
+                            <RadzenButton Text="Cancel" ButtonStyle="ButtonStyle.Secondary" Click="CloseModal" Class="m-2" />
+                        </div>
+                    </div>
+                </EditForm>
+            </div>
+        </div>
+    </div>
+}
+
 @code {
+    private IEnumerable<Lov> RoadList { get; set; } = new List<Lov>();
+    private IEnumerable<Lovd> CustomerList { get; set; } = new List<Lovd>();
+
+
+    List<string> selectedRoad = new();
+
+    public Order Order { get; set; } = new();
+
     [Inject]
     private IOrder m_Order { get; set; }
 
@@ -125,13 +206,38 @@ else
     private DateTime? _fromDate;
     private DateTime? _toDate;
 
+    private bool showModal = false;
+
     private Message notificationComponent;
 
     protected override async Task OnInitializedAsync()
     {
+        RoadList = await m_Lookup.GetAllRoadList();
+        var personList = await m_Lookup.GetAllCustomerList();
+        CustomerList = personList.Where(x => x.Desc == "DSR").ToList();
+
         await LoadData();
     }
 
+    private async Task HandleSubmit()
+    {
+        if (Order.Id > 0)
+        {
+            m_Order.UpdateOrder(Order);
+        }
+        else
+        {
+            m_Order.CreateOrder(Order);
+        }
+
+        showModal = false;
+    }
+
+
+    private void CloseModal()
+    {
+        showModal = false;
+    }
 
     public DateTime? fromDate
     {
@@ -252,7 +358,12 @@ else
 
     private void AddNew()
     {
-        _navigationManager.NavigateTo($"/Sale/0/0/0");
+        Order = new Order()
+        {
+        };
+
+        showModal = true;
+        //_navigationManager.NavigateTo($"/Sale/0/0/0");
     }
 
 

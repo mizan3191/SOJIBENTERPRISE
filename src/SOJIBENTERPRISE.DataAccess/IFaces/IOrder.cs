@@ -14,11 +14,11 @@
         IEnumerable<OrderDetailsDTO> GetOrderDetailsByOrderId(int orderId);
         Task<IEnumerable<ExistingOrderDTO>> GetExistingOrderById(int orderId);
         Task<IEnumerable<OrderDetailsDTO>> GetOrderDetailsByOrderAsync(int orderId);
+        double GetOrderAmount(int orderId);
         Task<IEnumerable<DamageProductDetailsDTO>> GetDamageProductDetailsByOrderAsync(int orderId);
         IEnumerable<CustomerDueDTO> GetCustomerDueHistory();
         InvoiceDTO GetOrdersById(int id);
         OrderInfoDTO OrderInfoById(int id);
-        List<(string name, double value)> GetPayment(int id);
         Task<IList<CustomerPaymentHistoryDTO>> GetCustomerPaymentHistoryById(int customerId);
 
         CustomerPaymentHistoryDTO DuePayment(int id);

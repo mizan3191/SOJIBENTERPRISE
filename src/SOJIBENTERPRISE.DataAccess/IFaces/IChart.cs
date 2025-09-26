@@ -11,6 +11,6 @@ namespace SOJIBENTERPRISE.DataAccess
         IList<BarGraphDTO> GetLast12MonthExpenseHistory(DateTime? fromDate, DateTime? toDate);
         IList<BarGraphDTO> GetMonthlyProfitHistory(DateTime? fromDate, DateTime? toDate);
         IList<BarGraphDTO> GetLast12MonthSalesHistory(int supplierId);
-
+        IList<BarGraphDTO> GetLast30DaysSalesHistory(int supplierId);
     }
 }

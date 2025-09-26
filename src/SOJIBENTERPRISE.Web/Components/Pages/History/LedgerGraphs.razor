@@ -42,7 +42,6 @@
 </div>
 
 <!-- End Last 30 Days Sales Chart -->
-
 <!-- Start Last 30 Days Daily Expense Chart -->
 
 <div class="card shadow-sm readOnlySection">
@@ -81,7 +80,6 @@
     }
 </div>
 <!-- End Last 30 Days Daily Expense Chart -->
-
 <!-- Start Last 30 Days Profit Chart -->
 
 <div class="card shadow-sm readOnlySection">
@@ -122,7 +120,46 @@
 </div>
 
 <!-- End Last 30 Days Profit Chart -->
+<!-- Start Last 30 Days Sales based on the Supplier Chart -->
+<div class="card shadow-sm readOnlySection">
 
+    <div class="row p-2">
+        <div class="col-md-8">
+            <h3>Last 30 Days Sales Chart : @CopysupplierName </h3>
+        </div>
+        <div class="col-md-4">
+            <RadzenDropDown TValue="int?"
+                            Data="@CopySupplierList"
+                            TextProperty="Name"
+                            ValueProperty="Id"
+                            Placeholder="Search Supplier"
+                            AllowClear="true"
+                            AllowFiltering="true"
+                            FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
+                            Change="@FilterSupplierList30DaysData"
+                            Style="width:100%">
+            </RadzenDropDown>
+        </div>
+    </div>
+</div>
+
+<div class="rz-p-0 rz-p-md-12">
+    @if (Last30DaysSalesSupplier == null || !Last30DaysSalesSupplier.Any())
+    {
+        <p>No data available.</p>
+    }
+    else
+    {
+        <RadzenChart>
+            <RadzenColumnSeries Data="@Last30DaysSalesSupplier"
+                                CategoryProperty="MonthName"
+                                Title="Daily Sales"
+                                ValueProperty="Amount" />
+        </RadzenChart>
+    }
+</div>
+
+<!-- End Last 30 Days Sales based on the Supplier Chart -->
 <!-- Start Last 12 Month Sales based on the Supplier Chart -->
 <div class="card shadow-sm readOnlySection">
 
@@ -163,7 +200,6 @@
 </div>
 
 <!-- End Last 12 Month Sales based on the Supplier Chart -->
-
 <!-- Start Last 12 Month Expense Chart -->
 <div class="card shadow-sm readOnlySection">
 
@@ -201,7 +237,6 @@
     }
 </div>
 <!-- End Last 12 Month Expense Chart -->
-
 <!-- Start Last 12 Month Profit Chart -->
 
 <div class="card shadow-sm readOnlySection">
@@ -240,7 +275,6 @@
     }
 </div>
 <!-- End Last 12 Month Profit Chart -->
-
 @code {
     [Inject]
     private IChart m_Chart { get; set; }
@@ -252,18 +286,23 @@
     private IList<BarGraphDTO> DailyExpense = new List<BarGraphDTO>();
     private IList<BarGraphDTO> Last12MonthExpense = new List<BarGraphDTO>();
     private IList<BarGraphDTO> Last12MonthSalesSupplier = new List<BarGraphDTO>();
+    private IList<BarGraphDTO> Last30DaysSalesSupplier = new List<BarGraphDTO>();
     private IList<BarGraphDTO> MonthlyProfit = new List<BarGraphDTO>();
     private IList<Lov> SupplierList = new List<Lov>();
+    private IList<Lov> CopySupplierList = new List<Lov>();
 
 
     private DateTime? startDate { get; set; }
     private DateTime? endDate { get; set; }
     private int supplierId { get; set; }
-    private string supplierName { get; set; }
+    private int CopysupplierId { get; set; }
+    private string supplierName { get; set; } = string.Empty;
+    private string CopysupplierName { get; set; } = string.Empty;
 
     protected override async Task OnInitializedAsync()
     {
         SupplierList = await m_Lookup.GetAllSupplierList();
+        CopySupplierList = SupplierList;
         DailyProfit = m_Chart.GetLast30DaysProfitHistory(startDate, endDate);
         DailySales = m_Chart.Get30DaysSalesHistory(startDate, endDate);
         DailyExpense = m_Chart.Get30DaysDailyExpenseHistory(startDate, endDate);
@@ -315,6 +354,21 @@
             {
                 supplierName = SupplierList.FirstOrDefault(x => x.Id == supplierId)?.Name ?? string.Empty;
                 Last12MonthSalesSupplier = m_Chart.GetLast12MonthSalesHistory(supplierId);
+            }
+        }
+
+        StateHasChanged();
+    }
+
+    private void FilterSupplierList30DaysData(object value)
+    {
+        if (int.TryParse(value?.ToString(), out var newId))
+        {
+            CopysupplierId = newId > 0 ? newId : 0;
+            if (CopysupplierId > 0)
+            {
+                CopysupplierName = CopySupplierList.FirstOrDefault(x => x.Id == CopysupplierId)?.Name ?? string.Empty;
+                Last30DaysSalesSupplier = m_Chart.GetLast30DaysSalesHistory(CopysupplierId);
             }
         }
 

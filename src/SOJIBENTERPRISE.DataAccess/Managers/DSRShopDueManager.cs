@@ -169,6 +169,7 @@
                         CustomerName = x.Customer.Name,
                         DSRCustomerName = x.DSRCustomer.Name,
                         ShopName = x.Shop.Name,
+                        InvoiceNumber = x.InvoiceNumber,
                         OrderId = x.OrderId,
                         DueAmount = x.DueAmount,
                         Date = x.Date
@@ -306,6 +307,7 @@
                         CustomerName = x.Customer.Name,
                         IssuedBYCustomerName = x.DSRCustomer.Name,
                         ShopName = x.Shop.Name,
+                        InvoiceNumber= x.InvoiceNumber,
                         OrderId = x.OrderId,
                         DueAmount = x.DueAmount,
                         ShopArea = x.Shop.Area,

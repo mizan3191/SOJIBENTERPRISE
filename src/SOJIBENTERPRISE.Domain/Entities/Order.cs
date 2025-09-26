@@ -20,17 +20,18 @@
         public int CustomerId { get; set; }
         public virtual Customer Customer { get; set; }
 
-        public int? PaymentMethodId { get; set; }
-        public PaymentMethod PaymentMethod { get; set; }
+       // public int? PaymentMethodId { get; set; }
+       // public PaymentMethod PaymentMethod { get; set; }
 
         //public string TransactionID { get; set; }
-        //public string Number { get; set; }
 
-        public double DeliveryCharge { get; set; }
+        public string Comments { get; set; }
+
+       // public double DeliveryCharge { get; set; }
         public string DeliveryLocation { get; set; }
         public double TotalAmount { get; set; }
         public double TotalPay { get; set; }
-        public double Discount { get; set; }
+       // public double Discount { get; set; }
         public double TotalDue { get; set; }
 
         public bool IsDeleted { get; set; }

@@ -66,6 +66,11 @@ else
                         <div>@item.DSRCustomerName</div>
                     </Template>
                 </RadzenDataGridColumn>
+                <RadzenDataGridColumn TItem="DSRShopDueForOrderDTO" Title="Invoice Number" Width="150px">
+                    <Template Context="item">
+                        <div>@item.InvoiceNumber</div>
+                    </Template>
+                </RadzenDataGridColumn>
                 <RadzenDataGridColumn TItem="DSRShopDueForOrderDTO" Title="Actions" Width="100px">
                     <Template Context="context">
                         <RadzenButton Icon="edit" ButtonStyle="ButtonStyle.Primary" Size="ButtonSize.Small"
@@ -119,6 +124,10 @@ else
                             </div>
                         </div>
                         <div class="row m-3">
+                            <div class="col-md-4 mb-3">
+                                <label class="Asterisk form-label">Invoice Number</label>
+                                <InputText @bind-Value="DSRShopDue.InvoiceNumber" class="form-control"></InputText>
+                            </div>
                             <div class="col-md-4 mb-3">
                                 <label class="Asterisk form-label">Due Amount</label>
                                 <InputNumber @bind-Value="DSRShopDue.DueAmount" class="form-control"></InputNumber>

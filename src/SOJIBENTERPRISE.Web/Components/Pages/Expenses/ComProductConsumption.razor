@@ -55,11 +55,10 @@ else
 
         <RadzenDataGrid Data="@FilterProductConsumptions" TItem="ProductConsumptionDTO" PageSize="10" AllowPaging="true" AllowSorting="true" AllowFiltering="false">
             <Columns>
-                <RadzenDataGridColumn TItem="ProductConsumptionDTO" Property="@nameof(ProductConsumptionDTO.ProductName)" Title="Product Name" Width="200px" />
                 <RadzenDataGridColumn TItem="ProductConsumptionDTO" Property="@nameof(ProductConsumptionDTO.ReasonOfConsumed)" Title="Reason" Width="150px" />
-                @* <RadzenDataGridColumn TItem="ProductConsumptionDTO" Property="@nameof(ProductConsumptionDTO.Person)" Title="Issued By" Width="200px" /> *@
-                <RadzenDataGridColumn TItem="ProductConsumptionDTO" Property="@nameof(ProductConsumptionDTO.QuantityConsumed)" Title="Quantity " Width="100px" />
-                <RadzenDataGridColumn TItem="ProductConsumptionDTO" Property="@nameof(ProductConsumptionDTO.DateConsumed)" Title="Date Time " Width="200px" />
+                <RadzenDataGridColumn TItem="ProductConsumptionDTO" Property="@nameof(ProductConsumptionDTO.Amount)" Title="Quantity " Width="100px" />
+                <RadzenDataGridColumn TItem="ProductConsumptionDTO" Property="@nameof(ProductConsumptionDTO.DateConsumed)" Title="Date Time " Width="100px" />
+                <RadzenDataGridColumn TItem="ProductConsumptionDTO" Property="@nameof(ProductConsumptionDTO.Comment)" Title="Comment" Width="200px" />
 
                 <RadzenDataGridColumn TItem="ProductConsumptionDTO" Title="Actions" Width="80px">
                     <Template Context="product">
@@ -98,50 +97,22 @@ else
                                                 AllowFiltering="true"
                                                 FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" />
                             </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="Asterisk">Amount</label>
+                                <InputNumber @bind-Value="ProductConsumption.Amount" class="form-control"></InputNumber>
+                            </div>
+                        </div>
 
-                             <div class="col-md-4 mb-3">
-                                <label class="Asterisk form-label" for="product">Issued By</label>
-                                <RadzenDropDown @bind-Value="ProductConsumption.CustomerId"
-                                                Data="@CustomerList"
-                                                TextProperty="Name"
-                                                ValueProperty="Id"
-                                                Placeholder="Select Customer"
-                                                Class="w-100"
-                                                AllowClear="true"
-                                                AllowFiltering="true"
-                                                FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" />
-                            </div> 
+                        <div class="row m-3">
                             <div class="col-md-4 mb-3">
                                 <label class="form-label">Date</label>
                                 <RadzenDatePicker @bind-Value="ProductConsumption.DateConsumed" DateFormat="yyyy-MM-dd" Class="w-100" />
                             </div>
-                        </div>
-
-                        <div class="row m-3">
-                            <div class="col-md-4 mb-3">
-                                <label class="Asterisk" for="product">Product</label>
-                                <RadzenDropDown @bind-Value="ProductConsumption.ProductId"
-                                                Data="@Products"
-                                                TextProperty="Name"
-                                                ValueProperty="Id"
-                                                Placeholder="Select Product"
-                                                Class="w-100"
-                                                AllowClear="true"
-                                                AllowFiltering="true"
-                                                FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" />
-                            </div>
-                            <div class="col-md-4 mb-3">
-                                <label class="Asterisk">Quantity</label>
-                                <InputNumber @bind-Value="ProductConsumption.QuantityConsumed" class="form-control"></InputNumber>
-                            </div>
-                        </div>
-@* 
-                        <div class="row m-3">
                             <div class="col-md-8 mb-3">
                                 <label>Comments</label>
                                 <RadzenTextArea @bind-Value="ProductConsumption.Comments" class="form-control"></RadzenTextArea>
                             </div>
-                        </div> *@
+                        </div> 
                         <br />
                         <div class="col-md-12">
                             <RadzenButton Text="Save" ButtonStyle="ButtonStyle.Primary" Type="submit" Class="m-2" />
@@ -196,9 +167,9 @@ else
     private async Task HandleSubmit()
     {
 
-        if (ProductConsumption.QuantityConsumed == 0)
+        if (ProductConsumption.Amount == 0)
         {
-            notificationComponent.Show("Validation Summary", "Please enter a valid quantity greater than zero.", NotificationSeverity.Warning);
+            notificationComponent.Show("Validation Summary", "Please enter a valid amount.", NotificationSeverity.Warning);
             return;
         }
 
@@ -340,11 +311,10 @@ else
         else
         {
             FilterProductConsumptions = ProductConsumptions.Where(c =>
-                (!string.IsNullOrEmpty(c.ProductName) && c.ProductName.Contains(search, StringComparison.OrdinalIgnoreCase)) ||
                 (!string.IsNullOrEmpty(c.ReasonOfConsumed.ToString()) && c.ReasonOfConsumed.ToString().Contains(search, StringComparison.OrdinalIgnoreCase)) ||
-                (!string.IsNullOrEmpty(c.Person) && c.Person.Contains(search, StringComparison.OrdinalIgnoreCase)) ||
-                (!string.IsNullOrEmpty(c.QuantityConsumed.ToString()) && c.QuantityConsumed.ToString().Contains(search, StringComparison.OrdinalIgnoreCase)) ||
-                (!string.IsNullOrEmpty(c.DateConsumed.ToString()) && c.DateConsumed.ToString().Contains(search, StringComparison.OrdinalIgnoreCase))
+                (!string.IsNullOrEmpty(c.Amount.ToString()) && c.Amount.ToString().Contains(search, StringComparison.OrdinalIgnoreCase)) ||
+                (!string.IsNullOrEmpty(c.DateConsumed.ToString()) && c.DateConsumed.ToString().Contains(search, StringComparison.OrdinalIgnoreCase)) ||
+                (!string.IsNullOrEmpty(c.Comment.ToString()) && c.Comment.ToString().Contains(search, StringComparison.OrdinalIgnoreCase))
             ).ToList();
         }
 
@@ -399,21 +369,19 @@ else
                         // Header
                         table.Header(header =>
                         {
-                            header.Cell().Background("#f5f5f5").Padding(5).Text("Product Name").Bold();
                             header.Cell().Background("#f5f5f5").Padding(5).Text("Reason").Bold();
-                            header.Cell().Background("#f5f5f5").Padding(5).Text("Person").Bold();
-                            header.Cell().Background("#f5f5f5").Padding(5).Text("Quantity").Bold();
+                            header.Cell().Background("#f5f5f5").Padding(5).Text("Amount").Bold();
                             header.Cell().Background("#f5f5f5").Padding(5).Text("Date Time").Bold();
+                            header.Cell().Background("#f5f5f5").Padding(5).Text("Comment").Bold();
                         });
 
                         // Data rows
                         foreach (var customer in FilterProductConsumptions)
                         {
-                            table.Cell().PaddingVertical(5).PaddingHorizontal(5).Text(customer.ProductName);
                             table.Cell().PaddingVertical(5).PaddingHorizontal(5).Text(customer.ReasonOfConsumed);
-                            table.Cell().PaddingVertical(5).PaddingHorizontal(5).Text(customer.Person);
-                            table.Cell().PaddingVertical(5).PaddingHorizontal(5).Text(customer.QuantityConsumed);
-                            table.Cell().PaddingVertical(5).PaddingHorizontal(5).Text(customer.DateConsumed);
+                            table.Cell().PaddingVertical(5).PaddingHorizontal(5).Text(customer.Amount.ToString());
+                            table.Cell().PaddingVertical(5).PaddingHorizontal(5).Text(customer.DateConsumed.ToString());
+                            table.Cell().PaddingVertical(5).PaddingHorizontal(5).Text(customer.Comment);
                         }
                     });
 

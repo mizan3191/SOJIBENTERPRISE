@@ -94,6 +94,12 @@ else
                     </Template>
                 </RadzenDataGridColumn>
 
+                <RadzenDataGridColumn TItem="DSRShopDueDTO" Title="Invoice Number" Width="100px">
+                    <Template Context="item">
+                        <div>@item.InvoiceNumber</div>
+                    </Template>
+                </RadzenDataGridColumn>
+
                 <RadzenDataGridColumn TItem="DSRShopDueDTO" Property="@nameof(DSRShopDueDTO.Date)" Title="Date Time" Width="150px" />
                @*  <RadzenDataGridColumn TItem="DSRShopDueDTO" Title="Actions" Width="80px">
                     <Template Context="context">

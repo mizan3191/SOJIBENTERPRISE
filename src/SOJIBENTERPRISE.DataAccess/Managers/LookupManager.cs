@@ -1429,7 +1429,6 @@
                 }
 
                 bool isDelete = _dbContext.Purchases.Any(c => c.PaymentMethodId == id)
-                   || _dbContext.Orders.Any(c => c.PaymentMethodId == id)
                    || _dbContext.Expenses.Any(c => c.PaymentMethodId == id)
                    || _dbContext.SupplierPaymentHistories.Any(c => c.PaymentMethodId == id)
                    || _dbContext.CustomerPaymentHistories.Any(c => c.PaymentMethodId == id)

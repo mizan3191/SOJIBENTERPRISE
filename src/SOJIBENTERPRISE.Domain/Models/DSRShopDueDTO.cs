@@ -7,6 +7,7 @@
         public string CustomerName { get; set; }
         
         public string ShopName { get; set; }
+        public string InvoiceNumber { get; set; }
         public double DueAmount { get; set; }
         public DateTime? Date { get; set; }
     }

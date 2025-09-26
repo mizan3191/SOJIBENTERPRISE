@@ -8,28 +8,12 @@
 
         public bool CreateOrder(Order order)
         {
-            if (order == null || order.OrderDetails == null || !order.OrderDetails.Any())
-            {
-                return false;
-            }
-
             using var transaction = _dbContext.Database.BeginTransaction();
 
             try
             {
                 _dbContext.Orders.Add(order);
                 _dbContext.SaveChanges(); // Save to generate Order ID
-
-                foreach (var item in order.OrderDetails)
-                {
-                    var entity = _dbContext.Products.FirstOrDefault(x => x.Id == item.ProductId);
-                    if (entity != null)
-                    {
-                        entity.StockQty = entity.StockQty - item.Quantity;
-                        _dbContext.SaveChanges();
-                    }
-                }
-
 
                 var lastPayment = _dbContext.CustomerPaymentHistories
                                  .Where(p => p.CustomerId == order.CustomerId && p.IsDeleted == false)
@@ -45,11 +29,8 @@
                     CustomerId = order.CustomerId,
                     OrderId = order.Id,
                     PaymentDate = order.Date,
-                    PaymentMethodId = order.PaymentMethodId,
-                    //TransactionID = order.TransactionID,
-                    //Number = order.Number,
                     TotalAmountThisOrder = order.TotalAmount,
-                    AmountPaid = order.TotalPay,
+                    AmountPaid = 0,
                     TotalDueBeforePayment = totalDueBefore,
                     TotalDueAfterPayment = totalDueAfter - order.TotalPay
                 };
@@ -58,7 +39,7 @@
                 _dbContext.SaveChanges();
 
 
-                if (order.TotalPay > 0)
+                if (order.TotalAmount > 0)
                 {
                     var existCurrentBalance = _dbContext.TransactionHistories
                                             .Where(x => !x.IsDeleted)
@@ -68,12 +49,12 @@
 
                     TransactionHistory transactionHistory = new()
                     {
-                        BalanceIn = order.TotalPay,
-                        BalanceOut = 0,
-                        CurrentBalance = existCurrentBalance + order.TotalPay,
+                        BalanceIn = 0,
+                        BalanceOut = order.TotalAmount,
+                        CurrentBalance = existCurrentBalance - order.TotalAmount,
                         Date = order.Date,
                         OrderId = order.Id,
-                        Resone = $"Sales Product",
+                        Resone = $"Order Amount",
                     };
 
                     _dbContext.Add(transactionHistory);
@@ -165,11 +146,6 @@
         public bool UpdateOrder(Order order)
         {
 
-            var orderDetailsList = _dbContext.OrderDetails
-                                 .Where(o => o.OrderId == order.Id)
-                                 .AsNoTracking()
-                                 .ToList();
-
             using var transaction = _dbContext.Database.BeginTransaction();
 
             try
@@ -180,16 +156,12 @@
 
                 if (existingOrder != null)
                 {
-                    existingOrder.PaymentMethodId = order.PaymentMethodId;
                     existingOrder.CustomerId = order.CustomerId;
                     existingOrder.DeliveryLocation = order.DeliveryLocation;
-                    existingOrder.DeliveryCharge = order.DeliveryCharge;
                     existingOrder.TotalAmount = order.TotalAmount;
-                    existingOrder.TotalPay = order.TotalPay;
-                    existingOrder.TotalDue = order.TotalDue;
                     existingOrder.Date = order.Date;
 
-                    existingOrder.OrderDetails = order.OrderDetails;
+                   
 
                     _dbContext.Update(existingOrder);
                     _dbContext.SaveChanges();
@@ -203,48 +175,13 @@
                                            .FirstOrDefault(p => p.OrderId == order.Id
                                            && p.CustomerId == order.CustomerId);
 
-                    var allProductIds = orderDetailsList.Select(p => p.ProductId)
-                                .Union(order.OrderDetails.Select(p => p.ProductId))
-                                .Distinct();
-
-                    var oldDetails = orderDetailsList ?? new List<OrderDetail>();
-                    var newDetails = order.OrderDetails ?? new List<OrderDetail>();
-
-                    var differences = allProductIds.Select(productId =>
-                    {
-                        var oldQty = oldDetails.FirstOrDefault(p => p.ProductId == productId)?.Quantity ?? 0;
-                        var newQty = newDetails.FirstOrDefault(p => p.ProductId == productId)?.Quantity ?? 0;
-
-                        return new ProductQuantityDifference
-                        {
-                            ProductId = productId,
-                            QuantityDifference = oldQty - newQty,
-                        };
-                    }).ToList();
-
-                    foreach (var detail in differences)
-                    {
-                        if (detail.QuantityDifference != 0)
-                        {
-                            var product = _dbContext.Products.Find(detail.ProductId);
-                            if (product != null)
-                            {
-                                product.StockQty += detail.QuantityDifference;
-                            }
-                        }
-                    }
-                    _dbContext.SaveChanges();
 
                     if (existingPayment != null)
                     {
                         existingPayment.CustomerId = order.CustomerId;
-                        existingPayment.PaymentMethodId = order.PaymentMethodId;
                         existingPayment.PaymentDate = order.Date;
-                        //existingPayment.TransactionID = order.TransactionID;
                         existingPayment.TotalAmountThisOrder = order.TotalAmount;
-                        existingPayment.AmountPaid = order.TotalPay;
-                        existingPayment.TotalDueBeforePayment = order.TotalPay;
-                        existingPayment.TotalDueAfterPayment = (existingPayment.TotalDueBeforePayment + order.TotalAmount) - order.TotalPay;
+                        existingPayment.TotalDueAfterPayment = (existingPayment.TotalDueBeforePayment + order.TotalAmount);
 
                         var UpDownAmount = existingPaymentDue.TotalDueAfterPayment - existingPayment.TotalDueAfterPayment;
 
@@ -279,13 +216,10 @@
                             CustomerId = order.CustomerId,
                             OrderId = order.Id,
                             PaymentDate = order.Date,
-                            PaymentMethodId = order.PaymentMethodId,
-                            //TransactionID = order.TransactionID,
-                            // Number = order.Number,
                             TotalAmountThisOrder = order.TotalAmount,
-                            AmountPaid = order.TotalPay,
+                            AmountPaid = 0,
                             TotalDueBeforePayment = totalDueBefore,
-                            TotalDueAfterPayment = totalDueAfter - order.TotalPay
+                            TotalDueAfterPayment = totalDueAfter,
                         };
 
                         _dbContext.CustomerPaymentHistories.Add(payment);
@@ -617,6 +551,22 @@
             }
         }
 
+        public double GetOrderAmount(int orderId)
+        {
+            try
+            {
+                var orderDetails = _dbContext.Orders.FirstOrDefault(x => x.Id == orderId).TotalAmount;
+                return orderDetails;
+            }
+            catch (Exception ex)
+            {
+                throw;
+                // Consider logging the exception here
+                // _logger.LogError(ex, "Error getting order details for order {OrderId}", orderId);
+               // return Enumerable.Empty<OrderDetailsDTO>();
+            }
+        }
+
         public async Task<IEnumerable<OrderDetailsDTO>> GetOrderDetailsByOrderAsync2(int orderId)
         {
             try
@@ -742,7 +692,7 @@
 
                    OrderDate = o.Date,
                    OrderId = o.Id,
-                   PaymentMethod = o.PaymentMethod.Name,
+                   //PaymentMethod = o.PaymentMethod.Name,
                    DeliveryLocation = o.DeliveryLocation,
                    ShippingMethod = " ",
                    //ShippingMethod = o.ShippingMethod.Name,
@@ -819,26 +769,6 @@
             catch (Exception ex)
             {
                 return new List<CustomerPaymentHistoryDTO>();
-            }
-        }
-
-        public List<(string name, double value)> GetPayment(int id)
-        {
-            var order = _dbContext.Orders.FirstOrDefault(o => o.Id == id);
-            if (order is not null)
-            {
-                return new List<(string Name, double Value)>
-                {
-                    ("Delivery Charge", order.DeliveryCharge),
-                    ("Grand Total", order.TotalAmount),
-                    ("Discount", order.Discount),
-                    ("Total Pay", order.TotalPay),
-                    ("Total Due", order.TotalDue)
-                };
-            }
-            else
-            {
-                return new List<(string Name, double Value)>();
             }
         }
 

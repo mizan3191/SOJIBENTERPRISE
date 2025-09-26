@@ -27,7 +27,7 @@
                             </NavLink>
                         </div>
                         
-                        <div class="nav-item px-3">
+                        @* <div class="nav-item px-3">
                             <NavLink class="nav-link" href="ProductSalesHistory">
                                 <span class="nav-menu" aria-hidden="true"></span>Product Sales History
                             </NavLink>
@@ -36,7 +36,7 @@
                             <NavLink class="nav-link" href="SalesReturn">
                                 <span class="nav-menu" aria-hidden="true"></span> Sales Return History
                             </NavLink>
-                        </div>
+                        </div> *@
                        
                     </div>
                 </div>
@@ -59,26 +59,13 @@
                                 <span class="nav-menu" aria-hidden="true"></span>DSR Due History
                             </NavLink>
                         </div>
-                       @*  <div class="nav-item px-3">
-                            <NavLink class="nav-link" href="SRDiscountList">
-                                <span class="nav-menu" aria-hidden="true"></span> SR Due List
-                            </NavLink>
-                        </div>
-                        <div class="nav-item px-3">
-                            <NavLink class="nav-link" href="ShopDues">
-                                <span class="nav-menu" aria-hidden="true"></span> Shop Due List
-                            </NavLink>
-                        </div> *@
+                      
                         @* <div class="nav-item px-3">
-                            <NavLink class="nav-link" href="PaymentHistory">
-                                <span class="nav-menu" aria-hidden="true"></span>DSR Payment History
-                            </NavLink>
-                        </div> *@
-                        <div class="nav-item px-3">
                             <NavLink class="nav-link" href="SRPaymentHistory">
                                 <span class="nav-menu" aria-hidden="true"></span> SR Payment History
                             </NavLink>
-                        </div>
+                        </div> *@
+
                         <div class="nav-item px-3">
                             <NavLink class="nav-link" href="ShopPaymentHistory">
                                 <span class="nav-menu" aria-hidden="true"></span>Shop Payment History
@@ -95,7 +82,7 @@
         </AuthorizeView>
 
         <!-- PURCHASES Section -->
-        <AuthorizeView Roles="Admin,Manager,Administrator">
+       @*  <AuthorizeView Roles="Admin,Manager,Administrator">
             <Authorized>
                 <div class="nav-group">
                     <div class="nav-group-title" @onclick="@(() => ToggleSection("purchases"))">
@@ -123,10 +110,10 @@
                     </div>
                 </div>
             </Authorized>
-        </AuthorizeView>
+        </AuthorizeView> *@
 
         <!-- Products Section -->
-        <AuthorizeView Roles="Admin,Manager,Administrator">
+        @* <AuthorizeView Roles="Admin,Manager,Administrator">
             <Authorized>
                 <div class="nav-group">
                     <div class="nav-group-title" @onclick="@(() => ToggleSection("products"))">
@@ -148,7 +135,7 @@
                     </div>
                 </div>
             </Authorized>
-        </AuthorizeView>
+        </AuthorizeView> *@
 
 
         <!-- Expenses Section -->
@@ -182,7 +169,7 @@
         </AuthorizeView>
 
         <!-- Damage Product Section -->
-        <AuthorizeView Roles="Admin,Manager,Administrator">
+        @* <AuthorizeView Roles="Admin,Manager,Administrator">
             <Authorized>
                 <div class="nav-group">
                     <div class="nav-group-title" @onclick="@(() => ToggleSection("damageProduct"))">
@@ -194,7 +181,8 @@
                             <NavLink class="nav-link" href="DamageStock">
                                 <span class="nav-menu" aria-hidden="true"></span> Damage Stock
                             </NavLink>
-                        </div>
+                        </div> *@
+
                         @* <div class="nav-item px-3">
                             <NavLink class="nav-link" href="DamageProductStockList">
                                 <span class="nav-menu" aria-hidden="true"></span> Damage Product Stock
@@ -215,7 +203,7 @@
                                 <span class="nav-menu" aria-hidden="true"></span> Product Handover List
                             </NavLink>
                         </div>*@
-                        <div class="nav-item px-3">
+                       @*  <div class="nav-item px-3">
                             <NavLink class="nav-link" href="DamageProductHandoverSummary">
                                 <span class="nav-menu" aria-hidden="true"></span> Handover Summary
                             </NavLink>
@@ -224,7 +212,7 @@
                     </div>
                 </div>
             </Authorized>
-        </AuthorizeView>
+        </AuthorizeView> *@
 
         <!-- LOOKUP Section -->
         <AuthorizeView Roles="Admin,Manager,Administrator">
@@ -235,7 +223,7 @@
                         <span class="toggle-icon">@GetToggleIcon("lookup")</span>
                     </div>
                     <div class="nav-submenu @(IsSectionOpen("lookup") ? "show" : "")">
-                        <div class="nav-item px-3">
+                       @*  <div class="nav-item px-3">
                             <NavLink class="nav-link" href="ProductCategory">
                                 <span class="nav-menu" aria-hidden="true"></span> Categories
                             </NavLink>
@@ -254,7 +242,7 @@
                             <NavLink class="nav-link" href="Size">
                                 <span class="nav-menu" aria-hidden="true"></span> Product Size
                             </NavLink>
-                        </div>
+                        </div> *@
                         <div class="nav-item px-3">
                             <NavLink class="nav-link" href="CustomerType">
                                 <span class="nav-menu" aria-hidden="true"></span> Staff Type
@@ -277,12 +265,12 @@
                                 <span class="nav-menu" aria-hidden="true"></span> Payment Method
                             </NavLink>
                         </div>
-
+@* 
                         <div class="nav-item px-3">
                             <NavLink class="nav-link" href="ShippingMethod">
                                 <span class="nav-menu" aria-hidden="true"></span> Shipping Method
                             </NavLink>
-                        </div>
+                        </div> *@
 
                         <div class="nav-item px-3">
                             <NavLink class="nav-link" href="ReasonofAdjustment">
@@ -319,11 +307,11 @@
                                 <span class="nav-menu" aria-hidden="true"></span> Staff
                             </NavLink>
                         </div>
-                        <div class="nav-item px-3">
+                       @*  <div class="nav-item px-3">
                             <NavLink class="nav-link" href="AddEditSupplier">
                                 <span class="nav-menu" aria-hidden="true"></span> Suppliers
                             </NavLink>
-                        </div>
+                        </div> *@
                         <div class="nav-item px-3">
                             <NavLink class="nav-link" href="ManageUser">
                                 <span class="nav-menu" aria-hidden="true"></span> Manage User
@@ -354,11 +342,11 @@
                                 <span class="nav-menu" aria-hidden="true"></span> Transaction History
                             </NavLink>
                         </div>
-                        <div class="nav-item px-3">
+                       @*  <div class="nav-item px-3">
                             <NavLink class="nav-link" href="Graphs">
                                 <span class="nav-menu" aria-hidden="true"></span> Chart History
                             </NavLink>
-                        </div>
+                        </div> *@
                     </div>
                 </div>
             </Authorized>

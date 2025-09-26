@@ -12,6 +12,7 @@
 
         public int ShopId { get; set; }
         public virtual Shop Shop { get; set; }
+        public string InvoiceNumber { get; set; }
 
         public int? OrderId { get; set; }
         public virtual Order Order { get; set; }
