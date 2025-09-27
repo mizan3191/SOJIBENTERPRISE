@@ -5,6 +5,7 @@
         bool CreateOrder(Order order);
         bool UpdateOrder(Order order);
         bool DeleteOrder(int id);
+        Order GetOrder(int id);
         Task<IEnumerable<OrdersDTO>> GetAllOrders(DateTime? startDate, DateTime? endDate);
         //IList<OrdersDTO> GetAllOrderss();
         Task<Order> GetOrderById(int orderId);

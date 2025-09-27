@@ -1,4 +1,4 @@
-﻿@page "/PurchasesDetails/{PurchaseId:int}"
+﻿@* @page "/PurchasesDetails/{PurchaseId:int}"
 
 
 @rendermode @(new InteractiveServerRenderMode(prerender: false))
@@ -36,7 +36,7 @@ else
                 </RadzenDataGridColumn>
 
 
-                @* <RadzenDataGridColumn TItem="PurchasesDetailsDTO" Property="@nameof(PurchasesDetailsDTO.Quantity)" Title="Quantity" Width="100px" /> *@
+                 <RadzenDataGridColumn TItem="PurchasesDetailsDTO" Property="@nameof(PurchasesDetailsDTO.Quantity)" Title="Quantity" Width="100px" /> 
                 <RadzenDataGridColumn TItem="PurchasesDetailsDTO" Property="@nameof(PurchasesDetailsDTO.Quantity)" Title="Quantity" Width="100px">
                     <FooterTemplate>
                         <div><strong>Total Product Price:</strong></div>
@@ -198,4 +198,4 @@ else
         });
     }
 
-}
+} *@

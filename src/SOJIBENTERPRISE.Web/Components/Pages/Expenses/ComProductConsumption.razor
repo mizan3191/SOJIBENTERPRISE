@@ -59,7 +59,7 @@ else
                 <RadzenDataGridColumn TItem="ProductConsumptionDTO" Property="@nameof(ProductConsumptionDTO.Amount)" Title="Quantity " Width="100px" />
                 <RadzenDataGridColumn TItem="ProductConsumptionDTO" Property="@nameof(ProductConsumptionDTO.DateConsumed)" Title="Date Time " Width="100px" />
                 <RadzenDataGridColumn TItem="ProductConsumptionDTO" Property="@nameof(ProductConsumptionDTO.Comment)" Title="Comment" Width="200px" />
-
+@* 
                 <RadzenDataGridColumn TItem="ProductConsumptionDTO" Title="Actions" Width="80px">
                     <Template Context="product">
                         <RadzenButton Icon="edit" ButtonStyle="ButtonStyle.Primary" Size="ButtonSize.Small"
@@ -67,7 +67,7 @@ else
                         <RadzenButton Icon="delete" ButtonStyle="ButtonStyle.Danger" Size="ButtonSize.Small"
                                       Click="() => ConfirmDelete(product.Id)" title="Delete" />
                     </Template>
-                </RadzenDataGridColumn>
+                </RadzenDataGridColumn> *@
             </Columns>
         </RadzenDataGrid>
     </div>
@@ -79,7 +79,7 @@ else
         <div class="modal-dialog modal-lg modal-dialog-scrollable modal-dialog-centered">
             <div class="modal-content card dataFormPop">
                 <div class="modal-header">
-                    <h3>@(ProductConsumption.Id > 0 ? "Edit Product Adjustment" : "Add Product Adjustment")</h3>
+                    <h3>@(ProductConsumption.Id > 0 ? "Edit Stock Adjustment" : "Add Stock Adjustment")</h3>
                 </div>
 
                 <EditForm Model="@ProductConsumption" OnValidSubmit="HandleSubmit">
@@ -179,12 +179,12 @@ else
         {
             ProductConsumption.DateConsumed = DateTime.Now;
             m_Product.UpdateProductConsumption(ProductConsumption);
-            notificationComponent.Show("Updated Summary", "Product Adjustment has been Updated successfully", NotificationSeverity.Warning);
+            notificationComponent.Show("Updated Summary", "Stock Adjustment has been Updated successfully", NotificationSeverity.Warning);
         }
         else
         {
             m_Product.CreateProductConsumption(ProductConsumption);
-            notificationComponent.Show("Added Summary", "Product Adjustment has been Added successfully", NotificationSeverity.Success);
+            notificationComponent.Show("Added Summary", "Stock Adjustment has been Added successfully", NotificationSeverity.Success);
         }
 
         await LoadData();
@@ -256,7 +256,7 @@ else
     async Task Delete(int id)
     {
         m_Product.DeleteProductConsumption(id);
-        notificationComponent.Show("Delete Summary", "Product Adjustment has been Deleted successfully", NotificationSeverity.Error);
+        notificationComponent.Show("Delete Summary", "Stock Adjustment has been Deleted successfully", NotificationSeverity.Error);
 
         await LoadData();
         StateHasChanged(); // If you are managing the data source manually

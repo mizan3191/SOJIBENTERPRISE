@@ -55,9 +55,10 @@ else
 
         <RadzenDataGrid Data="@FilterPurchases" TItem="PurchaseDTO" PageSize="10" AllowPaging="true" AllowSorting="true" AllowFiltering="false">
             <Columns>
-                <RadzenDataGridColumn TItem="PurchaseDTO" Property="@nameof(PurchaseDTO.Id)" Title="Id" Width="50px" />
+                <RadzenDataGridColumn TItem="PurchaseDTO" Property="@nameof(PurchaseDTO.OrderDateFormate)" Title="Date & Time" Width="100px" />
+
                 <RadzenDataGridColumn TItem="PurchaseDTO" Property="@nameof(PurchaseDTO.Name)" Title="Supplier Name" Width="150px" />
-                
+
                 <RadzenDataGridColumn TItem="PurchaseDTO" Title="Price" TextAlign="TextAlign.Right" Width="100px">
                     <Template Context="item">
                         <div>৳@item.TotalPrice.ToString("N2")</div>
@@ -66,16 +67,14 @@ else
                         <div class="text-end fw-bold">৳@FilterPurchases.Sum(o => o.TotalPrice).ToString("N2")</div>
                     </FooterTemplate>
                 </RadzenDataGridColumn>
-                <RadzenDataGridColumn TItem="PurchaseDTO" Property="@nameof(PurchaseDTO.ShippingMethod)" Title="Shipping Method" Width="100px" />
                 <RadzenDataGridColumn TItem="PurchaseDTO" Property="@nameof(PurchaseDTO.Comments)" Title="Comments" Width="200px" />
-                <RadzenDataGridColumn TItem="PurchaseDTO" Property="@nameof(PurchaseDTO.OrderDate)" Title="Date & Time" Width="150px" />
-
+               
                 <RadzenDataGridColumn TItem="PurchaseDTO" Title="Actions" Width="100px">
                     <Template Context="order">
                         <RadzenButton Icon="edit" ButtonStyle="ButtonStyle.Primary" Size="ButtonSize.Small"
                                       Click="() => Edit(order.Id, order.SupplierId)" style="margin-right: 5px;" title="Edit" />
-                        <RadzenButton Icon="info" ButtonStyle="ButtonStyle.Success" Size="ButtonSize.Small"
-                                      Click="() => PurchasesDetails(order.Id)" style="margin-right: 5px;" title="Details" />
+                        @* <RadzenButton Icon="info" ButtonStyle="ButtonStyle.Success" Size="ButtonSize.Small"
+                                      Click="() => PurchasesDetails(order.Id)" style="margin-right: 5px;" title="Details" /> *@
                         <RadzenButton Icon="delete" ButtonStyle="ButtonStyle.Danger" Size="ButtonSize.Small"
                                       Click="() => ConfirmDelete(order.Id)" title="Delete" />
                     </Template>
@@ -83,6 +82,62 @@ else
             </Columns>
         </RadzenDataGrid>
     </div>
+}
+
+
+@if (showPopup)
+{
+
+    <div class="modal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="1" style="display:block">
+        <div class="modal-dialog modal-lg modal-dialog-scrollable modal-dialog-centered">
+            <div class="modal-content card dataFormPop">
+                <div class="modal-header">
+                    <h3>@(Purchase.Id > 0 ? "Edit Purchase" : "Add Purchase")</h3>
+                </div>
+
+                <EditForm Model="@Purchase" OnValidSubmit="HandleSubmit">
+                    <div class="row m-3">
+
+                        <div class="col-md-4 mt-2">
+                            <label class="Asterisk" for="Supplier">Supplier</label>
+                            <RadzenDropDown @bind-Value="Purchase.SupplierId"
+                                            Data="@SupplierList"
+                                            TextProperty="Name"
+                                            ValueProperty="Id"
+                                            Placeholder="Select Supplier"
+                                            Class="w-100"
+                                            AllowClear="true"
+                                            AllowFiltering="true"
+                                            FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" />
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="totalAmount" class="form-label">Paid Amount</label>
+                            <input id="totalAmount" type="number" class="form-control" @bind="Purchase.TotalAmount" />
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Date</label>
+                            <RadzenDatePicker @bind-Value="Purchase.Date" DateFormat="yyyy-MM-dd" Class="w-100" />
+                        </div>
+                    </div>
+
+                    <div class="row m-3">
+                        <div class="col-md-8 mb-3">
+                            <label>Comments</label>
+                            <textarea @bind="Purchase.Comments" class="form-control"></textarea>
+                        </div>
+                    </div>
+
+                    <div class="col-md-12 m-3">
+                        <RadzenButton Text="Save" ButtonStyle="ButtonStyle.Primary" Type="submit" Class="m-2" />
+                        <RadzenButton Text="Cancel" ButtonStyle="ButtonStyle.Secondary" Click="CloseModal" Class="m-2" />
+                    </div>
+                </EditForm>
+            </div>
+        </div>
+    </div>
+
+
+
 }
 
 @code {
@@ -96,7 +151,7 @@ else
     private NavigationManager _navigationManager { get; set; }
 
     private IEnumerable<PurchaseDTO> Purchases { get; set; } = new List<PurchaseDTO>();
-
+    private IEnumerable<Lov> SupplierList { get; set; } = new List<Lov>();
 
     [Inject]
     private ILookup m_Lookup { get; set; }
@@ -107,8 +162,13 @@ else
 
     private IEnumerable<PurchaseDTO> FilterPurchases { get; set; } = new List<PurchaseDTO>();
 
+
+    public Purchase Purchase { get; set; } = new();
+
     private Message notificationComponent;
 
+    public bool showPopup { get; set; } = false;
+    public bool IsLock { get; set; } = false;
     private string search = string.Empty;
 
     private DateTime? _fromDate;
@@ -116,12 +176,16 @@ else
 
     protected override async Task OnInitializedAsync()
     {
+        SupplierList = await m_Lookup.GetAllSupplierList();
         await LoadData();
     }
 
-    private void Edit(int id, int supplierId)
+    private async Task Edit(int id, int supplierId)
     {
-        _navigationManager.NavigateTo($"/Purchase/{id}/{supplierId}");
+        Purchase = await m_Purchase.GetPurchaseById(id);
+
+        showPopup = true;
+        //_navigationManager.NavigateTo($"/Purchase/{id}/{supplierId}");
     }
 
     private void PurchasesDetails(int id)
@@ -129,9 +193,31 @@ else
         _navigationManager.NavigateTo($"/PurchasesDetails/{id}");
     }
 
+    private async Task HandleSubmit()
+    {
+        showPopup = false;
+
+        if (Purchase.Id > 0)
+        {
+            m_Purchase.UpdatePurchase(Purchase);
+        }
+        else
+        {
+            m_Purchase.CreatePurchase(Purchase);
+        }
+        
+        await LoadData();
+    }
+
     private void AddNew()
     {
-        _navigationManager.NavigateTo($"/Purchase");
+        Purchase = new();
+        showPopup = true;
+    }
+
+    private void CloseModal()
+    {
+        showPopup = false;
     }
 
 
@@ -176,11 +262,11 @@ else
     async Task ConfirmDelete(int id)
     {
         var options = new ConfirmOptions()
-            {
-                OkButtonText = "Yes, Delete",
-                CancelButtonText = "No, Keep",
-                ShowClose = true,
-            };
+        {
+            OkButtonText = "Yes, Delete",
+            CancelButtonText = "No, Keep",
+            ShowClose = true,
+        };
 
         bool? confirmed = await DialogService.Confirm("Are you absolutely sure you want to delete this item?", "Delete Confirmation", options);
 
@@ -223,7 +309,6 @@ else
             FilterPurchases = Purchases.Where(c =>
                 (!string.IsNullOrEmpty(c.Name) && c.Name.Contains(search, StringComparison.OrdinalIgnoreCase)) ||
                 (!string.IsNullOrEmpty(c.OrderDate.ToString()) && c.OrderDate.ToString().Contains(search, StringComparison.OrdinalIgnoreCase)) ||
-                (!string.IsNullOrEmpty(c.ShippingMethod) && c.ShippingMethod.Contains(search, StringComparison.OrdinalIgnoreCase)) ||
                 (!string.IsNullOrEmpty(c.TotalPrice.ToString()) && c.TotalPrice.ToString().Contains(search, StringComparison.OrdinalIgnoreCase))
             ).ToList();
         }
@@ -289,12 +374,12 @@ else
                         {
                             table.Cell().PaddingVertical(5).PaddingHorizontal(5).Text(customer.Name);
                             table.Cell().PaddingVertical(5).PaddingHorizontal(5).Text($"৳{customer.TotalPrice:N2}");
-                            table.Cell().PaddingVertical(5).PaddingHorizontal(5).Text(customer.OrderDate);
+                            table.Cell().PaddingVertical(5).PaddingHorizontal(5).Text(customer.OrderDateFormate);
 
                         }
 
                         // Total Row
-                       
+
                         table.Cell().ColumnSpan(1).PaddingVertical(5).PaddingHorizontal(5).AlignRight().Text("Total").Bold();
                         table.Cell().PaddingVertical(5).PaddingHorizontal(5).Text($"৳{FilterPurchases.Sum(x => x.TotalPrice):N2}").Bold();
                         table.Cell().PaddingVertical(5).PaddingHorizontal(5).Text("").Bold();

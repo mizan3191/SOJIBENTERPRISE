@@ -48,8 +48,6 @@
 
             var purchases = await _dbContext.Purchases
                 .Include(p => p.Supplier)
-                .Include(p => p.PurchaseDetails)
-                .Include(p => p.ShippingMethod)
                 .Where(p => !p.IsDeleted && p.Date.Date >= fromDate && p.Date.Date <= toDate)
                 .Select(p => new PurchaseDTO
                 {
@@ -57,9 +55,7 @@
                     Name = p.Supplier.Name,
                     SupplierId = p.Supplier.Id,
                     Comments = p.Comments,
-                    ShippingMethod = p.ShippingMethod.Name,
                     OrderDate = p.Date,
-                    DamageProductDueAdjustment = p.DamageProductDueAdjustment,
                     TotalPrice = p.TotalAmount,
                 })
                 .OrderByDescending(p => p.Id)
@@ -291,14 +287,11 @@
             try
             {
                 var orders = _dbContext.Purchases
-                    .Include(p => p.PurchaseDetails)
-                        .ThenInclude(pd => pd.Product)
-                            .ThenInclude(p => p.ProductsSize)
                     .Where(p => p.SupplierId == personId && !p.IsDeleted)
                     .Select(p => new OrdersByPersonDTO
                     {
                         OrderId = p.Id,
-                        ProductsName = string.Join(", ", p.PurchaseDetails.Select(pd => pd.Product.DisplayNameSize)), // Assuming DisplayNameSize includes size info
+                        ProductsName = "", // Assuming DisplayNameSize includes size info
                         OrderDate = p.Date,
                     })
                     .OrderByDescending(p => p.OrderId)

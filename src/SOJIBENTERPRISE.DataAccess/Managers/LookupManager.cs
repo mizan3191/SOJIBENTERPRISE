@@ -1428,8 +1428,7 @@
                     return false;
                 }
 
-                bool isDelete = _dbContext.Purchases.Any(c => c.PaymentMethodId == id)
-                   || _dbContext.Expenses.Any(c => c.PaymentMethodId == id)
+                bool isDelete = _dbContext.Expenses.Any(c => c.PaymentMethodId == id)
                    || _dbContext.SupplierPaymentHistories.Any(c => c.PaymentMethodId == id)
                    || _dbContext.CustomerPaymentHistories.Any(c => c.PaymentMethodId == id)
                    || _dbContext.DSRShopPaymentHistories.Any(c => c.PaymentMethodId == id)
@@ -1518,20 +1517,11 @@
                     return false;
                 }
 
-                var isDelete = _dbContext.Purchases.Any(c => c.ShippingMethodId == id);
+                // If no customers are associated, proceed with deletion
+                ShippingMethod.IsDeleted = true;
+                _dbContext.Update(ShippingMethod);
+                _dbContext.SaveChanges();
 
-                if (!isDelete)
-                {
-                    _dbContext.Remove(ShippingMethod);
-                    _dbContext.SaveChanges();
-                }
-                else
-                {
-                    // If no customers are associated, proceed with deletion
-                    ShippingMethod.IsDeleted = true;
-                    _dbContext.Update(ShippingMethod);
-                    _dbContext.SaveChanges();
-                }
 
                 return true;
             }

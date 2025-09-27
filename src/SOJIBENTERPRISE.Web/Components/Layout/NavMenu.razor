@@ -82,7 +82,7 @@
         </AuthorizeView>
 
         <!-- PURCHASES Section -->
-       @*  <AuthorizeView Roles="Admin,Manager,Administrator">
+         <AuthorizeView Roles="Admin,Manager,Administrator">
             <Authorized>
                 <div class="nav-group">
                     <div class="nav-group-title" @onclick="@(() => ToggleSection("purchases"))">
@@ -96,7 +96,7 @@
                                 <span class="nav-menu" aria-hidden="true"></span> Purchases
                             </NavLink>
                         </div>
-                        <div class="nav-item px-3">
+                        @* <div class="nav-item px-3">
                             <NavLink class="nav-link" href="SupplierDuesHistory">
                                 <span class="nav-menu" aria-hidden="true"></span> Due List
                             </NavLink>
@@ -105,12 +105,12 @@
                             <NavLink class="nav-link" href="SupplierPaymentHistory">
                                 <span class="nav-menu" aria-hidden="true"></span> Payment History
                             </NavLink>
-                        </div>
+                        </div> *@
                        
                     </div>
                 </div>
             </Authorized>
-        </AuthorizeView> *@
+        </AuthorizeView> 
 
         <!-- Products Section -->
         @* <AuthorizeView Roles="Admin,Manager,Administrator">
@@ -307,11 +307,11 @@
                                 <span class="nav-menu" aria-hidden="true"></span> Staff
                             </NavLink>
                         </div>
-                       @*  <div class="nav-item px-3">
+                         <div class="nav-item px-3">
                             <NavLink class="nav-link" href="AddEditSupplier">
                                 <span class="nav-menu" aria-hidden="true"></span> Suppliers
                             </NavLink>
-                        </div> *@
+                        </div> 
                         <div class="nav-item px-3">
                             <NavLink class="nav-link" href="ManageUser">
                                 <span class="nav-menu" aria-hidden="true"></span> Manage User

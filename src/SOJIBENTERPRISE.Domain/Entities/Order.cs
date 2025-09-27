@@ -28,11 +28,11 @@
         public string Comments { get; set; }
 
        // public double DeliveryCharge { get; set; }
-        public string DeliveryLocation { get; set; }
-        public double TotalAmount { get; set; }
+        //public string DeliveryLocation { get; set; }
+       // public double TotalAmount { get; set; }
         public double TotalPay { get; set; }
-       // public double Discount { get; set; }
-        public double TotalDue { get; set; }
+       // public double Commition { get; set; }
+        //public double TotalDue { get; set; }
 
         public bool IsDeleted { get; set; }
 
@@ -48,6 +48,41 @@
         public virtual ICollection<DSRShopDue> DSRShopDues { get; set; }
         public virtual ICollection<CustomerProductReturn> CustomerProductReturns { get; set; }
         public virtual ICollection<SRDiscount> SRDiscounts { get; set; }
+
+        private double _totalAmount;
+        private double _commition;
+
+        public double TotalAmount
+        {
+            get => _totalAmount;
+            set
+            {
+                _totalAmount = value;
+                CalculateTotalPay();
+            }
+        }
+
+        public double Commition
+        {
+            get => _commition;
+            set
+            {
+                _commition = value;
+                CalculateTotalPay();
+            }
+        }
+
+        private void CalculateTotalPay()
+        {
+            if (TotalAmount > 0 && Commition >= 0)
+            {
+                TotalPay = (TotalAmount + (TotalAmount * Commition / 100));
+            }
+            else
+            {
+                TotalPay = 0;
+            }
+        }
 
     }
 

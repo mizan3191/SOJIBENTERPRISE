@@ -54,11 +54,9 @@ else
 
         <RadzenDataGrid Data="@FilterOrders" TItem="OrdersDTO" PageSize="10" AllowPaging="true" AllowSorting="true" AllowFiltering="false">
             <Columns>
-                <RadzenDataGridColumn TItem="OrdersDTO" Property="@nameof(OrdersDTO.Id)" Title="Order ID" Width="50px" />
-                <RadzenDataGridColumn TItem="OrdersDTO" Property="@nameof(OrdersDTO.Name)" Title="DSR Name" Width="80px" />
-                <RadzenDataGridColumn TItem="OrdersDTO" Property="@nameof(OrdersDTO.Address)" Title="Address" Width="80px" />
-
-                <RadzenDataGridColumn TItem="OrdersDTO" Title="Price" Width="80px" TextAlign="TextAlign.Right">
+                <RadzenDataGridColumn TItem="OrdersDTO" Property="@nameof(OrdersDTO.OrderDateFormate)" Title="Date" Width="100px" />
+                <RadzenDataGridColumn TItem="OrdersDTO" Property="@nameof(OrdersDTO.Address)" Title="Road" Width="80px" />
+                <RadzenDataGridColumn TItem="OrdersDTO" Title="Invest Amount" Width="80px" TextAlign="TextAlign.Right">
                     <Template Context="item">
                         <div>৳@item.TotalPrice.ToString("N2")</div>
                     </Template>
@@ -66,8 +64,35 @@ else
                         <div class="text-end fw-bold">৳@FilterOrders.Sum(o => o.TotalPrice).ToString("N2")</div>
                     </FooterTemplate>
                 </RadzenDataGridColumn>
-                <RadzenDataGridColumn TItem="OrdersDTO" Property="@nameof(OrdersDTO.OrderDate)" Title="Date" Width="80px" />
-                <RadzenDataGridColumn TItem="OrdersDTO" Title="Actions" Width="180px">
+                <RadzenDataGridColumn TItem="OrdersDTO" Title="Get Amount" Width="80px" TextAlign="TextAlign.Right">
+                    <Template Context="item">
+                        <div>৳@item.TotalGetAmount.ToString("N2")</div>
+                    </Template>
+                    <FooterTemplate>
+                        <div class="text-end fw-bold">৳@FilterOrders.Sum(o => o.TotalGetAmount).ToString("N2")</div>
+                    </FooterTemplate>
+                </RadzenDataGridColumn>
+                <RadzenDataGridColumn TItem="OrdersDTO" Title="Shop Due" Width="80px" TextAlign="TextAlign.Right">
+                    <Template Context="item">
+                        <div>৳@item.ShopDueAmount.ToString("N2")</div>
+                    </Template>
+                    <FooterTemplate>
+                        <div class="text-end fw-bold">৳@FilterOrders.Sum(o => o.ShopDueAmount).ToString("N2")</div>
+                    </FooterTemplate>
+                </RadzenDataGridColumn>
+                <RadzenDataGridColumn TItem="OrdersDTO" Title="Expense" Width="80px" TextAlign="TextAlign.Right">
+                    <Template Context="item">
+                        <div>৳@item.ExpenseAmount.ToString("N2")</div>
+                    </Template>
+                    <FooterTemplate>
+                        <div class="text-end fw-bold">৳@FilterOrders.Sum(o => o.ExpenseAmount).ToString("N2")</div>
+                    </FooterTemplate>
+                </RadzenDataGridColumn>
+                <RadzenDataGridColumn TItem="OrdersDTO" Property="@nameof(OrdersDTO.Name)" Title="DSR Name" Width="80px" />
+
+
+
+                <RadzenDataGridColumn TItem="OrdersDTO" Title="Actions" Width="100px">
                     <Template Context="order">
                         <RadzenButton Icon="edit" Disabled="order.IsLock" ButtonStyle="ButtonStyle.Primary" Size="ButtonSize.Small"
                                       Click="() => Edit(order.Id, order.CustomerId)" style="margin-right: 5px;" title="Edit" />
@@ -145,19 +170,33 @@ else
                                                     Style="width: 100%;" />
                                 </div>
                             </div>
-                        </div>
 
-                        <div class="row m-3 ">
                             <div class="col-md-4 mb-3">
                                 <label class="form-label">Date</label>
                                 <RadzenDatePicker @bind-Value="Order.Date" DateFormat="yyyy-MM-dd" Class="w-100" />
                             </div>
+                        </div>
 
+                        <div class="row m-3 ">
                             <div class="col-md-4 mb-3">
                                 <label for="totalAmount" class="form-label">Amount</label>
-                                <input id="totalAmount" type="number" class="form-control" @bind="Order.TotalAmount" />
+                                <input id="totalAmount" type="number" class="form-control"
+                                       @bind="Order.TotalAmount"/>
                             </div>
 
+                            <div class="col-md-4 mb-3">
+                                <label for="Commition" class="form-label">Commition (%)</label>
+                                <input id="Commition" type="number" class="form-control"
+                                       @bind="Order.Commition" />
+                            </div>
+
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">Total Payable Amount</label>
+                                <input type="number" class="form-control" value="@Order.TotalPay" readonly />
+                            </div>
+                        </div>
+
+                        <div class="row m-3 ">
                             <div class="col-md-8 mb-3">
                                 <label>Comments</label>
                                 <InputText @bind-Value="Order.Comments" class="form-control"></InputText>
@@ -176,14 +215,6 @@ else
 }
 
 @code {
-    private IEnumerable<Lov> RoadList { get; set; } = new List<Lov>();
-    private IEnumerable<Lovd> CustomerList { get; set; } = new List<Lovd>();
-
-
-    List<string> selectedRoad = new();
-
-    public Order Order { get; set; } = new();
-
     [Inject]
     private IOrder m_Order { get; set; }
 
@@ -200,6 +231,14 @@ else
     private IEnumerable<OrdersDTO> Orders { get; set; } = new List<OrdersDTO>();
     private IEnumerable<OrdersDTO> FilterOrders { get; set; } = new List<OrdersDTO>();
 
+    private IEnumerable<Lov> RoadList { get; set; } = new List<Lov>();
+    private IEnumerable<Lovd> CustomerList { get; set; } = new List<Lovd>();
+
+
+    List<string> selectedRoad = new();
+
+    public Order Order { get; set; } = new();
+
     private string search = string.Empty;
     private bool IsLock = false;
 
@@ -209,6 +248,10 @@ else
     private bool showModal = false;
 
     private Message notificationComponent;
+
+    public decimal totalAmount { get; set; }
+    public decimal commition { get; set; }  // treat as percentage
+    public decimal totalPay { get; set; }
 
     protected override async Task OnInitializedAsync()
     {
@@ -221,6 +264,12 @@ else
 
     private async Task HandleSubmit()
     {
+        Order.SelectedRoad = string.Join(", ", selectedRoad);
+
+        selectedRoad = new List<string>();
+
+        //Order.TotalPay = Order.TotalAmount + (Order.TotalAmount * Order.Commition / 100);
+
         if (Order.Id > 0)
         {
             m_Order.UpdateOrder(Order);
@@ -231,6 +280,7 @@ else
         }
 
         showModal = false;
+        await LoadData();
     }
 
 
@@ -269,11 +319,11 @@ else
     async Task ConfirmDelete(int id)
     {
         var options = new ConfirmOptions()
-            {
-                OkButtonText = "Yes, Delete",
-                CancelButtonText = "No, Keep",
-                ShowClose = true,
-            };
+        {
+            OkButtonText = "Yes, Delete",
+            CancelButtonText = "No, Keep",
+            ShowClose = true,
+        };
 
         bool? confirmed = await DialogService.Confirm("Are you absolutely sure you want to delete this item?", "Delete Confirmation", options);
 
@@ -313,27 +363,14 @@ else
 
     private void Edit(int id, int customerId)
     {
-        _navigationManager.NavigateTo($"/Sale/{id}/{customerId}");
+        Order = m_Order.GetOrder(id);
+
+        showModal = true;
     }
 
     private void OrderDetails(int id, int customerId)
     {
         _navigationManager.NavigateTo($"/PrintOrder/{id}/{customerId}");
-    }
-
-    private void OrderReturn(int orderid, int id)
-    {
-        _navigationManager.NavigateTo($"/CustomerProductReturn/{id}/{orderid}");
-    }
-
-    private void DamageProduct(int orderid, int customerId)
-    {
-        _navigationManager.NavigateTo($"/DamageProductReturn/{customerId}/{orderid}");
-    }
-
-    private void SRDiscount(int orderid, int customerId)
-    {
-        _navigationManager.NavigateTo($"/SRDiscount/{customerId}/{orderid}");
     }
 
     private void ShopDue(int orderid, int customerId)

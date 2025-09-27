@@ -8,70 +8,37 @@
 
         public bool CreatePurchase(Purchase purchase)
         {
-            if (purchase == null || purchase.PurchaseDetails == null || !purchase.PurchaseDetails.Any())
-            {
-                return false;
-            }
-
             using var transaction = _dbContext.Database.BeginTransaction();
             try
             {
                 _dbContext.Purchases.Add(purchase);
                 _dbContext.SaveChanges(); // Save to generate Order ID
 
-                foreach (var item in purchase.PurchaseDetails)
-                {
-                    var entity = _dbContext.Products.FirstOrDefault(x => x.Id == item.ProductId);
-                    if (entity != null)
-                    {
-                        entity.StockQty = entity.StockQty + item.Quantity;
-                        _dbContext.SaveChanges();
-                    }
-                }
+                //var lastPayment = _dbContext.SupplierPaymentHistories
+                //                 .Where(p => p.SupplierId == purchase.SupplierId && !p.IsDeleted)
+                //                 .OrderByDescending(p => p.Id)
+                //                 .FirstOrDefault();
 
-
-                var lastPayment = _dbContext.SupplierPaymentHistories
-                                 .Where(p => p.SupplierId == purchase.SupplierId && !p.IsDeleted)
-                                 .OrderByDescending(p => p.Id)
-                                 .FirstOrDefault();
-
-                double totalDueBefore = lastPayment?.TotalDueAfterPayment ?? 0; // If no previous payment, due is 0
-                double totalDueAfter = totalDueBefore + purchase.TotalAmount;
+                //double totalDueBefore = lastPayment?.TotalDueAfterPayment ?? 0; // If no previous payment, due is 0
+                //double totalDueAfter = totalDueBefore + purchase.TotalAmount;
 
                 // Add new entry to SupplierPaymentHistory
-                var payment = new SupplierPaymentHistory()
-                {
-                    SupplierId = purchase.SupplierId,
-                    PurchaseId = purchase.Id,
-                    PaymentDate = purchase.Date,
-                    Comments = purchase.Comments,
-                    PaymentMethod = purchase.PaymentMethod,
-                    TransactionID = purchase.TransactionID,
-                    Number = purchase.Number,
-                    TotalAmountThisPurchase = purchase.TotalAmount,
-                    AmountPaid = purchase.TotalPay,
-                    TotalDueBeforePayment = totalDueBefore,
-                    TotalDueAfterPayment = totalDueAfter - purchase.TotalPay
-                };
+                //var payment = new SupplierPaymentHistory()
+                //{
+                //    SupplierId = purchase.SupplierId,
+                //    PurchaseId = purchase.Id,
+                //    PaymentDate = purchase.Date,
+                //    Comments = purchase.Comments,
+                //    TotalAmountThisPurchase = purchase.TotalAmount,
+                //    TotalDueBeforePayment = totalDueBefore,
+                //    TotalDueAfterPayment = totalDueAfter,
+                //};
 
-                _dbContext.SupplierPaymentHistories.Add(payment);
-                _dbContext.SaveChanges();
+                //_dbContext.SupplierPaymentHistories.Add(payment);
+                //_dbContext.SaveChanges();
 
-                if (purchase.DamageProductDueAdjustment > 0)
-                {
-                    DamageProductHandoverPaymentHistory paymentHistory = new()
-                    {
-                        SupplierId = purchase.SupplierId,
-                        PurchaseId = purchase.Id,
-                        Date = purchase.Date,
-                        AmountPaid = purchase.DamageProductDueAdjustment,
-                    };
 
-                    _dbContext.DamageProductHandoverPaymentHistories.Add(paymentHistory);
-                    _dbContext.SaveChanges();
-                }
-
-                if (purchase.TotalPay > 0)
+                if (purchase.TotalAmount > 0)
                 {
                     var existCurrentBalance = _dbContext.TransactionHistories
                                            .AsNoTracking()
@@ -83,8 +50,8 @@
                     TransactionHistory transactionHistory = new()
                     {
                         BalanceIn = 0,
-                        BalanceOut = purchase.TotalPay,
-                        CurrentBalance = existCurrentBalance - purchase.TotalPay,
+                        BalanceOut = purchase.TotalAmount,
+                        CurrentBalance = existCurrentBalance - purchase.TotalAmount,
                         Date = purchase.Date,
                         PurchaseId = purchase.Id,
                         Resone = purchase.Supplier?.Name != null ? $"Purchase from {purchase.Supplier.Name}." : $"Purchase Payment",
@@ -108,111 +75,55 @@
 
         public bool UpdatePurchase(Purchase purchase)
         {
+            var existingTotalAmount = _dbContext.Purchases
+                   .AsNoTracking()
+                   .FirstOrDefault(o => o.Id == purchase.Id).TotalAmount;
+
             using var transaction = _dbContext.Database.BeginTransaction();
 
             try
             {
-                var existingPurchaseData = _dbContext.Purchases
-                   .Include(o => o.PurchaseDetails)
-                   .AsNoTracking()
-                   .FirstOrDefault(o => o.Id == purchase.Id);
 
-                // Get the existing purchase with details (tracked)
-                var existingPurchase = _dbContext.Purchases
-                    .Include(o => o.PurchaseDetails)
-                    .FirstOrDefault(o => o.Id == purchase.Id);
-
-                if (existingPurchase == null)
-                    return false;
-
-
-                // Update purchase header
-                existingPurchase.PaymentMethod = purchase.PaymentMethod;
-                existingPurchase.ShippingMethod = purchase.ShippingMethod;
-                existingPurchase.DeliveryCharge = purchase.DeliveryCharge;
-                existingPurchase.TotalAmount = purchase.TotalAmount;
-                existingPurchase.TotalPay = purchase.TotalPay;
-                existingPurchase.Comments = purchase.Comments;
-                existingPurchase.TotalDue = purchase.TotalDue;
-                existingPurchase.Date = purchase.Date;
-                existingPurchase.PurchaseDetails = purchase.PurchaseDetails;
-
-                var oldDetails = existingPurchaseData?.PurchaseDetails ?? new List<PurchaseDetail>();
-                var newDetails = existingPurchase?.PurchaseDetails ?? new List<PurchaseDetail>();
-
-
-                var allProductIds = existingPurchaseData?.PurchaseDetails.Select(p => p.ProductId)
-                            .Union(existingPurchase?.PurchaseDetails.Select(p => p.ProductId))
-                            .Distinct();
-
-                var differences = allProductIds.Select(productId =>
-                {
-                    var oldQty = oldDetails.FirstOrDefault(p => p.ProductId == productId)?.Quantity ?? 0;
-                    var newQty = newDetails.FirstOrDefault(p => p.ProductId == productId)?.Quantity ?? 0;
-
-                    return new ProductQuantityDifference
-                    {
-                        ProductId = productId,
-                        QuantityDifference = newQty - oldQty
-                    };
-                }).ToList();
-
-                foreach (var detail in differences)
-                {
-                    if (detail.QuantityDifference != 0)
-                    {
-                        var product = _dbContext.Products.Find(detail.ProductId);
-                        if (product != null)
-                        {
-                            product.StockQty += detail.QuantityDifference;
-                        }
-                    }
-                }
+                _dbContext.Update(purchase);
                 _dbContext.SaveChanges();
 
 
-                // Update supplier payment history
-                var existingPayment = _dbContext.SupplierPaymentHistories
-                    .FirstOrDefault(p => p.PurchaseId == purchase.Id);
+                
 
-                var amountDifference = existingPurchaseData.TotalPay - purchase.TotalPay;
-                var purchaseDifference = existingPurchaseData.TotalAmount - purchase.TotalAmount;
+                //// Get the existing purchase with details (tracked)
+                //var existingPurchase = _dbContext.Purchases
+                //    .FirstOrDefault(o => o.Id == purchase.Id);
 
-                if (existingPayment != null)
-                {
+                //if (existingPurchase == null)
+                //    return false;
 
-                    existingPayment.PaymentMethod = purchase.PaymentMethod;
-                    existingPayment.Number = purchase.Number;
-                    existingPayment.PaymentDate = purchase.Date;
-                    existingPayment.Comments = purchase.Comments;
-                    existingPayment.TransactionID = purchase.TransactionID;
-                    existingPayment.AmountPaid = purchase.TotalPay;
-                    existingPayment.TotalDueAfterPayment = (existingPayment.TotalDueAfterPayment + amountDifference) - purchaseDifference;
-                    existingPayment.TotalAmountThisPurchase = purchase.TotalAmount;
+                //// Update supplier payment history
+                //var existingPayment = _dbContext.SupplierPaymentHistories
+                //    .FirstOrDefault(p => p.PurchaseId == purchase.Id);
 
-                    RecalculateSupplierPaymentHistoriesAsync(existingPayment.SupplierId, existingPayment.Id, purchaseDifference);
+                var amountDifference = existingTotalAmount - purchase.TotalAmount;
+                //var purchaseDifference = existingTotalAmount - purchase.TotalAmount;
+
+                //if (existingPayment != null)
+                //{
+
+                //    existingPayment.PaymentDate = purchase.Date;
+                //    existingPayment.Comments = purchase.Comments;
+                //    existingPayment.TotalDueAfterPayment = (existingPayment.TotalDueAfterPayment + purchase.TotalAmount) - existingTotalAmount;
+                //    existingPayment.TotalAmountThisPurchase = purchase.TotalAmount;
+
+                //    RecalculateSupplierPaymentHistoriesAsync(existingPayment.SupplierId, existingPayment.Id, amountDifference);
 
 
-                    _dbContext.SaveChanges();
-                }
-
-                // Update damage product history if exists
-                var damageProductHistory = _dbContext.DamageProductHandoverPaymentHistories
-                    .FirstOrDefault(x => x.PurchaseId == purchase.Id);
-
-                if (damageProductHistory != null)
-                {
-                    damageProductHistory.AmountPaid = existingPurchase.DamageProductDueAdjustment;
-                }
+                //    _dbContext.SaveChanges();
+                //}
 
                 // Update transaction history if payment amount changed
                 var existingTransaction = _dbContext.TransactionHistories
                     .FirstOrDefault(x => x.PurchaseId == purchase.Id);
 
-                if (existingTransaction != null && purchase.TotalPay != existingPurchaseData.TotalPay)
+                if (existingTransaction != null && purchase.TotalAmount != existingTotalAmount)
                 {
-                    //var amountDifference = existingPurchaseData.TotalPay - purchase.TotalPay;
-
                     existingTransaction.BalanceOut -= amountDifference;
                     existingTransaction.CurrentBalance += amountDifference;
 
@@ -251,32 +162,22 @@
                 _dbContext.Update(purchasesEntity);
                 _dbContext.SaveChanges();
 
-                var purchasesDetailsEntity = _dbContext.PurchaseDetails.Where(x => x.PurchaseId == id).ToList();
-
-                foreach (var product in purchasesDetailsEntity)
-                {
-                    var productEntity = _dbContext.Products.FirstOrDefault(x => x.Id == product.ProductId);
-                    productEntity.StockQty = productEntity.StockQty - product.Quantity;
-
-                    _dbContext.Update(productEntity);
-                    _dbContext.SaveChanges();
-                }
 
                 // Get the payment to be soft deleted
-                var supplierPaymentHistoriesEntity = _dbContext.SupplierPaymentHistories
-                    .FirstOrDefault(p => p.PurchaseId == purchasesEntity.Id
-                    && p.SupplierId == purchasesEntity.SupplierId);
+                //var supplierPaymentHistoriesEntity = _dbContext.SupplierPaymentHistories
+                //    .FirstOrDefault(p => p.PurchaseId == purchasesEntity.Id
+                //    && p.SupplierId == purchasesEntity.SupplierId);
 
-                if (supplierPaymentHistoriesEntity is not null)
-                {
-                    supplierPaymentHistoriesEntity.IsDeleted = true;
+                //if (supplierPaymentHistoriesEntity is not null)
+                //{
+                //    supplierPaymentHistoriesEntity.IsDeleted = true;
 
-                    var amount = purchasesEntity.TotalAmount - supplierPaymentHistoriesEntity.AmountPaid;
-                    RecalculateSupplierPaymentHistoriesAsync(supplierPaymentHistoriesEntity.SupplierId, supplierPaymentHistoriesEntity.Id, amount);
+                //    var amount = purchasesEntity.TotalAmount - supplierPaymentHistoriesEntity.AmountPaid;
+                //    RecalculateSupplierPaymentHistoriesAsync(supplierPaymentHistoriesEntity.SupplierId, supplierPaymentHistoriesEntity.Id, amount);
 
-                    _dbContext.Update(supplierPaymentHistoriesEntity);
-                    _dbContext.SaveChanges();
-                }
+                //    _dbContext.Update(supplierPaymentHistoriesEntity);
+                //    _dbContext.SaveChanges();
+                //}
 
                 // Get the Purchase related transaction history
                 var purchasestransactionHistory = _dbContext.TransactionHistories
@@ -297,27 +198,26 @@
 
                 // Get the Supplier Payment History related transaction history
 
-                if (supplierPaymentHistoriesEntity is not null)
-                {
-                    var supplierPaymentHistorytransactionHistory = _dbContext.TransactionHistories
-                    .FirstOrDefault(t => t.SupplierPaymentHistoryId == supplierPaymentHistoriesEntity.Id);
+                //if (purchasesEntity.TotalAmount > 0)
+                //{
+                //    var supplierPaymentHistorytransactionHistory = _dbContext.TransactionHistories
+                //    .FirstOrDefault(t => t.PurchaseId == purchasesEntity.Id);
 
+                //    if (supplierPaymentHistorytransactionHistory is not null)
+                //    {
 
+                //        if (supplierPaymentHistorytransactionHistory.BalanceOut.HasValue
+                //           && supplierPaymentHistorytransactionHistory.BalanceOut.Value > 0)
+                //        {
+                //            BalanceOutTransactionHistories(supplierPaymentHistorytransactionHistory.Id, supplierPaymentHistorytransactionHistory.BalanceOut.Value);
+                //        }
 
-                    if (supplierPaymentHistorytransactionHistory is not null)
-                    {
+                //        supplierPaymentHistorytransactionHistory.IsDeleted = true;
+                //        _dbContext.Update(supplierPaymentHistorytransactionHistory);
+                //        _dbContext.SaveChanges();
+                //    }
+                //}
 
-                        if (supplierPaymentHistorytransactionHistory.BalanceOut.HasValue
-                           && supplierPaymentHistorytransactionHistory.BalanceOut.Value > 0)
-                        {
-                            BalanceOutTransactionHistories(supplierPaymentHistorytransactionHistory.Id, supplierPaymentHistorytransactionHistory.BalanceOut.Value);
-                        }
-
-                        supplierPaymentHistorytransactionHistory.IsDeleted = true;
-                        _dbContext.Update(supplierPaymentHistorytransactionHistory);
-                        _dbContext.SaveChanges();
-                    }
-                }
                 transaction.Commit();
                 return true;
             }
@@ -328,43 +228,42 @@
             }
         }
 
-        private void RecalculateSupplierPaymentHistoriesAsync(int supplierId, int id, double amount)
-        {
-            if (amount == 0)
-                return;
+        //private void RecalculateSupplierPaymentHistoriesAsync(int supplierId, int id, double amount)
+        //{
+        //    if (amount == 0)
+        //        return;
 
-            try
-            {
-                var payments = _dbContext.SupplierPaymentHistories
-                                   .Where(p => p.SupplierId == supplierId && p.Id > id)
-                                   .OrderBy(p => p.Id)
-                                   .ToList();
+        //    try
+        //    {
+        //        var payments = _dbContext.SupplierPaymentHistories
+        //                           .Where(p => p.SupplierId == supplierId && p.Id > id)
+        //                           .OrderBy(p => p.Id)
+        //                           .ToList();
 
-                if (!payments.Any() || payments.Count() == 0 || payments is null)
-                {
-                    return;
-                }
+        //        if (!payments.Any() || payments.Count() == 0 || payments is null)
+        //        {
+        //            return;
+        //        }
 
-                foreach (var payment in payments)
-                {
-                    payment.TotalDueBeforePayment -= amount;
-                    payment.TotalDueAfterPayment -= amount;
-                }
+        //        foreach (var payment in payments)
+        //        {
+        //            payment.TotalDueBeforePayment -= amount;
+        //            payment.TotalDueAfterPayment -= amount;
+        //        }
 
-                _dbContext.SaveChanges();
-            }
-            catch
-            {
-                throw;
-            }
-        }
+        //        _dbContext.SaveChanges();
+        //    }
+        //    catch
+        //    {
+        //        throw;
+        //    }
+        //}
 
         public async Task<Purchase> GetPurchaseById(int purchaseId)
         {
             try
             {
                 return await _dbContext.Purchases
-                .Include(o => o.PurchaseDetails)
                 .FirstOrDefaultAsync(o => o.Id == purchaseId && !o.IsDeleted);
             }
             catch (Exception ex)

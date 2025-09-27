@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using SOJIBENTERPRISE.Domain;
 
 namespace SOJIBENTERPRISE.DataAccess
 {
@@ -205,12 +206,10 @@ namespace SOJIBENTERPRISE.DataAccess
         {
             try
             {
-               // var entity = _dbContext.Products.FirstOrDefault(x => x.Id == ProductConsumption.ProductId);
-              //  var Adjustment = _dbContext.ProductConsumptions.AsNoTracking().FirstOrDefault(x => x.Id == ProductConsumption.Id).QuantityConsumed;
-               // entity.StockQty = (entity.StockQty + Adjustment) - ProductConsumption.QuantityConsumed;
-
                 AddUpdateEntity(ProductConsumption);
                 _dbContext.SaveChanges();
+
+
 
                 return true;
             }
@@ -223,20 +222,50 @@ namespace SOJIBENTERPRISE.DataAccess
 
         public int CreateProductConsumption(ProductConsumption ProductConsumption)
         {
+            using var transaction = _dbContext.Database.BeginTransaction();
+
             try
             {
-                _dbContext.ProductConsumptions.Add(ProductConsumption);
-                _dbContext.SaveChanges();
+                AddUpdateEntity(ProductConsumption);
 
-               // var entity = _dbContext.Products.FirstOrDefault(x => x.Id == ProductConsumption.ProductId);
-               // entity.StockQty = entity.StockQty - ProductConsumption.QuantityConsumed;
-               // _dbContext.SaveChanges();
+                if (ProductConsumption.Amount != 0)
+                {
+                    var existCurrentBalance = _dbContext.TransactionHistories
+                                               .AsNoTracking()
+                                               .OrderByDescending(x => x.Id)
+                                               .FirstOrDefault()?.CurrentBalance ?? 0;
 
+                    TransactionHistory transactionHistory = new TransactionHistory();
+
+                    if (ProductConsumption.Amount > 0)
+                    {   
+                        transactionHistory.BalanceIn = 0;
+                        transactionHistory.BalanceOut = ProductConsumption.Amount;
+                        transactionHistory.CurrentBalance = existCurrentBalance - ProductConsumption.Amount;
+                        transactionHistory.Resone = "Amount Adjustment";
+                    }
+                    else
+                    {
+                        transactionHistory.BalanceIn = Math.Abs(ProductConsumption.Amount);
+                        transactionHistory.BalanceOut = 0;
+                        transactionHistory.CurrentBalance = existCurrentBalance + ProductConsumption.Amount; // Adding negative = subtracting
+                        transactionHistory.Resone = "Amount Adjustment";
+                    }
+
+                    transactionHistory.Date = ProductConsumption.DateConsumed;
+                    transactionHistory.ProductConsumptionId = ProductConsumption.Id;
+
+                    _dbContext.Add(transactionHistory);
+                    _dbContext.SaveChanges();
+                }
+
+                transaction.Commit();
                 return ProductConsumption.Id;
             }
-            catch (Exception ex)
+            catch
             {
-                return 0;
+                transaction.Rollback();
+                throw;
             }
         }
 
