@@ -11,6 +11,6 @@ namespace SOJIBENTERPRISE.Domain
         public DateTime OrderDate { get; set; }
         public double TotalPrice { get; set; }
 
-        public string OrderDateFormate => OrderDate.ToString("dd-MMM-yyyy (ddd)", new CultureInfo("bn-BD"));
+        public string OrderDateFormate => OrderDate.ToString("dd-MMM-yyyy (ddd)");
     }
 }

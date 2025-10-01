@@ -43,7 +43,7 @@ else
                 <RadzenDataGridColumn TItem="OrdersByPersonDTO" Property="@nameof(OrdersByPersonDTO.OrderId)" Title="Order ID" Width="100px" />
                 <RadzenDataGridColumn TItem="OrdersByPersonDTO" Property="@nameof(OrdersByPersonDTO.ProductsName)" Title="Name" Width="350px" />
                 <RadzenDataGridColumn TItem="OrdersByPersonDTO" Property="@nameof(OrdersByPersonDTO.Area)" Title="Area" Width="150px" />
-                <RadzenDataGridColumn TItem="OrdersByPersonDTO" Property="@nameof(OrdersByPersonDTO.OrderDate)" Title="Order Date" Width="150px" />
+                <RadzenDataGridColumn TItem="OrdersByPersonDTO" Property="@nameof(OrdersByPersonDTO.DateFormate)" Title="Order Date" Width="150px" />
                 <RadzenDataGridColumn TItem="OrdersByPersonDTO" Title="Actions" Width="80px">
                     <Template Context="context">
                         <RadzenButton Icon="description" ButtonStyle="ButtonStyle.Info" Size="ButtonSize.Small"
@@ -121,7 +121,7 @@ else
                 (!string.IsNullOrEmpty(c.OrderId.ToString()) && c.OrderId.ToString().Contains(search, StringComparison.OrdinalIgnoreCase)) ||
                 (!string.IsNullOrEmpty(c.ProductsName.ToString()) && c.ProductsName.ToString().Contains(search, StringComparison.OrdinalIgnoreCase)) ||
                 (!string.IsNullOrEmpty(c.Area.ToString()) && c.Area.ToString().Contains(search, StringComparison.OrdinalIgnoreCase)) ||
-                (!string.IsNullOrEmpty(c.OrderDate.ToString()) && c.OrderDate.ToString().Contains(search, StringComparison.OrdinalIgnoreCase))
+                (!string.IsNullOrEmpty(c.DateFormate.ToString()) && c.DateFormate.ToString().Contains(search, StringComparison.OrdinalIgnoreCase))
             ).ToList();
         }
 
@@ -175,7 +175,7 @@ else
                             table.Cell().PaddingVertical(5).PaddingHorizontal(5).Text(customer.OrderId.ToString());
                             table.Cell().PaddingVertical(5).PaddingHorizontal(5).Text(customer.ProductsName);
                             table.Cell().PaddingVertical(5).PaddingHorizontal(5).Text(customer.Area);
-                            table.Cell().PaddingVertical(5).PaddingHorizontal(5).Text(customer.OrderDate.ToString("dd/MM/yyyy"));
+                            table.Cell().PaddingVertical(5).PaddingHorizontal(5).Text(customer.DateFormate);
                         }
                     });
 

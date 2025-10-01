@@ -11,6 +11,7 @@ namespace SOJIBENTERPRISE.Domain
         public string Resone { get; set; }
         public DateTime Date { get; set; }
 
+        public string DateFormated => Date.ToString("dd-MMM-yyyy (ddd)");
         public bool IsDeleted { get; set; }
 
         [NotMapped]

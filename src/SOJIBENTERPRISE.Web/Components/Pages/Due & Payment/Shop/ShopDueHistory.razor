@@ -100,7 +100,7 @@ else
                     </Template>
                 </RadzenDataGridColumn>
 
-                <RadzenDataGridColumn TItem="DSRShopDueDTO" Property="@nameof(DSRShopDueDTO.Date)" Title="Date Time" Width="150px" />
+                <RadzenDataGridColumn TItem="DSRShopDueDTO" Property="@nameof(DSRShopDueDTO.DateFormate)" Title="Date Time" Width="150px" />
                @*  <RadzenDataGridColumn TItem="DSRShopDueDTO" Title="Actions" Width="80px">
                     <Template Context="context">
                         <RadzenButton Icon="edit" ButtonStyle="ButtonStyle.Primary" Size="ButtonSize.Small"
@@ -210,7 +210,7 @@ else
                 (!string.IsNullOrEmpty(c.ShopArea) && c.ShopArea.Contains(search, StringComparison.OrdinalIgnoreCase)) ||
                 (!string.IsNullOrEmpty(c.ShopNumber) && c.ShopNumber.Contains(search, StringComparison.OrdinalIgnoreCase)) ||
                 (!string.IsNullOrEmpty(c.DueAmount.ToString()) && c.DueAmount.ToString().Contains(search, StringComparison.OrdinalIgnoreCase)) ||
-                (!string.IsNullOrEmpty(c.Date.ToString()) && c.Date.ToString().Contains(search, StringComparison.OrdinalIgnoreCase)) ||
+                (!string.IsNullOrEmpty(c.DateFormate.ToString()) && c.DateFormate.ToString().Contains(search, StringComparison.OrdinalIgnoreCase)) ||
                 (!string.IsNullOrEmpty(c.CustomerName) && c.CustomerName.Contains(search, StringComparison.OrdinalIgnoreCase))
             ).ToList();
         }
@@ -285,7 +285,7 @@ else
                             // table.Cell().PaddingVertical(5).PaddingHorizontal(5).Text(customer.Shop.Number);
                             table.Cell().PaddingVertical(5).PaddingHorizontal(5).Text($"৳{customer.DueAmount:N2}");
                             table.Cell().PaddingVertical(5).PaddingHorizontal(5).Text(customer.CustomerName);
-                            table.Cell().PaddingVertical(5).PaddingHorizontal(5).Text(customer.Date.Value);
+                            table.Cell().PaddingVertical(5).PaddingHorizontal(5).Text(customer.DateFormate);
 
                         }
 

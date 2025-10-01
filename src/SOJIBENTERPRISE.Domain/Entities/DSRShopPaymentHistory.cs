@@ -1,4 +1,6 @@
-﻿namespace SOJIBENTERPRISE.Domain
+﻿using static System.Runtime.InteropServices.JavaScript.JSType;
+
+namespace SOJIBENTERPRISE.Domain
 {
     public class DSRShopPaymentHistory
     {
@@ -6,6 +8,7 @@
         public double AmountPaid { get; set; }
         public DateTime PaymentDate { get; set; } = DateTime.Now;
 
+        public string DateFormated => PaymentDate.ToString("dd-MMM-yyyy (ddd)");
         public int CustomerId { get; set; }
         public virtual Customer Customer { get; set; }
 
@@ -39,6 +42,7 @@
         public double ShopDueAmount { get; set; }
         public double ShopPaidAmount { get; set; }
         public DateTime Date { get; set; }
+        public string DateFormated => Date.ToString("dd-MMM-yyyy (ddd)");
     }
     public class TempShopSummary
     {
@@ -64,7 +68,8 @@
         public double ShopDueAmount { get; set; }
         public double ShopPaidAmount { get; set; }
         public DateTime Date { get; set; }
-        public string DateFormated => Date.ToString("dd/MM/yyyy");
+        public string DateFormated => Date.ToString("dd-MMM-yyyy (ddd)");
+        
     }
 
     public class TempShopDuePaymentListSummary

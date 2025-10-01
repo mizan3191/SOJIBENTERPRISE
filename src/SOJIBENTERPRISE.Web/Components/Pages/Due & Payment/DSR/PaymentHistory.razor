@@ -123,9 +123,9 @@
                         </Template>
                     </RadzenDataGridColumn>
                     <RadzenDataGridColumn TItem="CustomerPaymentHistoryDTO" Property="PaymentMethod" Title="Payment Method" Width="100px" />
-                    <RadzenDataGridColumn TItem="CustomerPaymentHistoryDTO" Property="PaymentDate" Title="Date Time" Width="140px">
+                    <RadzenDataGridColumn TItem="CustomerPaymentHistoryDTO" Property="DateFormated" Title="Date Time" Width="140px">
                         <Template Context="context">
-                            @context.PaymentDate.ToString("yyyy-MM-dd HH:mm")
+                            @context.DateFormated
                         </Template>
                     </RadzenDataGridColumn>
 
@@ -451,7 +451,7 @@
                 (!string.IsNullOrEmpty(c.PaymentMethod) && c.PaymentMethod.Contains(search, StringComparison.OrdinalIgnoreCase)) ||
                 (!string.IsNullOrEmpty(c.Number) && c.Number.Contains(search, StringComparison.OrdinalIgnoreCase)) ||
                 (!string.IsNullOrEmpty(c.TransactionID) && c.TransactionID.Contains(search, StringComparison.OrdinalIgnoreCase)) ||
-                (!string.IsNullOrEmpty(c.PaymentDate.ToString()) && c.PaymentDate.ToString().Contains(search, StringComparison.OrdinalIgnoreCase))
+                (!string.IsNullOrEmpty(c.DateFormated.ToString()) && c.DateFormated.ToString().Contains(search, StringComparison.OrdinalIgnoreCase))
             ).ToList();
         }
 
@@ -524,7 +524,7 @@
                             table.Cell().PaddingVertical(5).PaddingHorizontal(5).AlignRight().Text($"৳{customer.TotalDueBeforePayment:N2}");
                             table.Cell().PaddingVertical(5).PaddingHorizontal(5).AlignRight().Text($"৳{customer.TotalDueAfterPayment:N2}");
                             table.Cell().PaddingVertical(5).PaddingHorizontal(5).Text(customer.PaymentMethod);
-                            table.Cell().PaddingVertical(5).PaddingHorizontal(5).Text(customer.PaymentDate.ToString("dd/MM/yyyy"));
+                            table.Cell().PaddingVertical(5).PaddingHorizontal(5).Text(customer.DateFormated);
                         }
 
                         // Total Row

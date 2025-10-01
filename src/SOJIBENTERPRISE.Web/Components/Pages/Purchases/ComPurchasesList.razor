@@ -355,31 +355,35 @@ else
                     {
                         table.ColumnsDefinition(columns =>
                         {
-                            columns.RelativeColumn(2);
                             columns.RelativeColumn(3);
                             columns.RelativeColumn(3);
+                            columns.RelativeColumn(3);
+                            columns.RelativeColumn(4);
                         });
 
                         // Header
                         table.Header(header =>
                         {
+                            header.Cell().Background("#f5f5f5").Padding(5).Text("Date Time").Bold();
                             header.Cell().Background("#f5f5f5").Padding(5).Text("Name").Bold();
                             header.Cell().Background("#f5f5f5").Padding(5).Text("Total Price").Bold();
-                            header.Cell().Background("#f5f5f5").Padding(5).Text("Date Time").Bold();
+                            header.Cell().Background("#f5f5f5").Padding(5).Text("Comment").Bold();
+                            
 
                         });
 
                         // Data rows
                         foreach (var customer in FilterPurchases)
                         {
+                            table.Cell().PaddingVertical(5).PaddingHorizontal(5).Text(customer.OrderDateFormate);
                             table.Cell().PaddingVertical(5).PaddingHorizontal(5).Text(customer.Name);
                             table.Cell().PaddingVertical(5).PaddingHorizontal(5).Text($"৳{customer.TotalPrice:N2}");
-                            table.Cell().PaddingVertical(5).PaddingHorizontal(5).Text(customer.OrderDateFormate);
+                            table.Cell().PaddingVertical(5).PaddingHorizontal(5).Text(customer.Comments);
 
                         }
 
                         // Total Row
-
+                        table.Cell().PaddingVertical(5).PaddingHorizontal(5).Text("").Bold();
                         table.Cell().ColumnSpan(1).PaddingVertical(5).PaddingHorizontal(5).AlignRight().Text("Total").Bold();
                         table.Cell().PaddingVertical(5).PaddingHorizontal(5).Text($"৳{FilterPurchases.Sum(x => x.TotalPrice):N2}").Bold();
                         table.Cell().PaddingVertical(5).PaddingHorizontal(5).Text("").Bold();

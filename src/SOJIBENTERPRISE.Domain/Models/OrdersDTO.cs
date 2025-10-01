@@ -9,7 +9,7 @@ namespace SOJIBENTERPRISE.Domain
         public int CustomerId { get; set; }
         public string Name { get; set; }
         public DateTime OrderDate { get; set; }
-        public string OrderDateFormate => OrderDate.ToString("dd-MMM-yyyy (ddd)", new CultureInfo("bn-BD"));
+        public string OrderDateFormate => OrderDate.ToString("dd-MMM-yyyy (ddd)");
         public double TotalPrice { get; set; }
         public double TotalGetAmount { get; set; }
         public double ShopDueAmount { get; set; }

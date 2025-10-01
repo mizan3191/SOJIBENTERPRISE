@@ -7,5 +7,6 @@
         public string ReasonOfConsumed { get; set; }
         public DateTime DateConsumed { get; set; }
         public string Comment { get; set; }
+        public string DateFormate => DateConsumed.ToString("dd-MMM-yyyy (ddd)");
     }
 }

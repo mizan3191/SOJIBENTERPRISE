@@ -82,7 +82,7 @@ else
                     </FooterTemplate>
                 </RadzenDataGridColumn>
                 <RadzenDataGridColumn TItem="TransactionHistory" Property="@nameof(TransactionHistory.Resone)" Title="Reason" Width="80px" />
-                <RadzenDataGridColumn TItem="TransactionHistory" Property="@nameof(TransactionHistory.Date)" Title="Date" Width="100px" />
+                <RadzenDataGridColumn TItem="TransactionHistory" Property="@nameof(TransactionHistory.DateFormated)" Title="Date" Width="100px" />
             </Columns>
         </RadzenDataGrid>
     </div>
@@ -316,7 +316,7 @@ else
                 (!string.IsNullOrEmpty(c.BalanceIn.ToString()) && c.BalanceIn.ToString().Contains(search, StringComparison.OrdinalIgnoreCase)) ||
                 (!string.IsNullOrEmpty(c.BalanceOut.ToString()) && c.BalanceOut.ToString().Contains(search, StringComparison.OrdinalIgnoreCase)) ||
                 (!string.IsNullOrEmpty(c.CurrentBalance.ToString()) && c.CurrentBalance.ToString().Contains(search, StringComparison.OrdinalIgnoreCase)) ||
-                (!string.IsNullOrEmpty(c.Date.ToString()) && c.Date.ToString().Contains(search, StringComparison.OrdinalIgnoreCase)) ||
+                (!string.IsNullOrEmpty(c.DateFormated) && c.DateFormated.Contains(search, StringComparison.OrdinalIgnoreCase)) ||
                 (!string.IsNullOrEmpty(c.Resone) && c.Resone.Contains(search, StringComparison.OrdinalIgnoreCase))
             ).ToList();
         }
@@ -363,11 +363,11 @@ else
                     {
                         table.ColumnsDefinition(columns =>
                         {
-                            columns.RelativeColumn(3);
-                            columns.RelativeColumn(3);
+                            columns.RelativeColumn(2);
+                            columns.RelativeColumn(2);
                             columns.RelativeColumn(2);
                             columns.RelativeColumn(3.5f);
-                            columns.RelativeColumn(1.8f);
+                            columns.RelativeColumn(3);
                         });
 
                         // Header
@@ -387,7 +387,7 @@ else
                             table.Cell().PaddingVertical(5).PaddingHorizontal(5).AlignRight().Text($"৳{customer.BalanceOut:N2}");
                             table.Cell().PaddingVertical(5).PaddingHorizontal(5).AlignRight().Text($"৳{customer.CurrentBalance?.ToString("N2") ?? "0.00"}");
                             table.Cell().PaddingVertical(5).PaddingHorizontal(5).Text(customer.Resone);
-                            table.Cell().PaddingVertical(5).PaddingHorizontal(5).Text(customer.Date.ToString("dd/MM/yyyy"));
+                            table.Cell().PaddingVertical(5).PaddingHorizontal(5).Text(customer.DateFormated);
                         }
 
                         table.Cell().ColumnSpan(1).PaddingVertical(5).PaddingHorizontal(5).Text("Total:").Bold();

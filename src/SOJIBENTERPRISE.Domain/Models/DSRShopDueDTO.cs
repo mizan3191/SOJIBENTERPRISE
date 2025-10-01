@@ -10,6 +10,7 @@
         public string InvoiceNumber { get; set; }
         public double DueAmount { get; set; }
         public DateTime? Date { get; set; }
+        public string DateFormate => Date.Value.ToString("dd-MMM-yyyy (ddd)");
     }
 
     public class DSRShopDueDTO : DSRShopDueDTOBase

@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace SOJIBENTERPRISE.Domain
 {
@@ -9,7 +10,9 @@ namespace SOJIBENTERPRISE.Domain
         [Required]
         [DataType(DataType.Date)]
         public DateTime ExpenseDate { get; set; } = DateTime.UtcNow;
-        
+
+        public string DateFormated => ExpenseDate.ToString("dd-MMM-yyyy (ddd)");
+
         [Required]
         public int ExpenseTypeId { get; set; }
         public ExpenseType ExpenseType { get; set; } // e.g., Electricity Bill, Salary

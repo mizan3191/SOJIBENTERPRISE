@@ -17,11 +17,11 @@
             <RadzenButton Text="Back" ButtonStyle="ButtonStyle.Secondary" Click="Cancel" Class="m-2" />
 
             <!-- Export Button -->
-            @* <div class="d-flex align-items-center border rounded" style="width: fit-content;">
+             <div class="d-flex align-items-center border rounded" style="width: fit-content;">
                 <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="1rem;" Wrap="FlexWrap.Wrap" Style="padding-left: 0.10rem;">
                     <RadzenButton Text="Export To PDF" Icon="picture_as_pdf" Click="@(args => ExportToPdf())" />
                 </RadzenStack>
-            </div> *@
+            </div> 
         </div>
 
 
@@ -110,7 +110,6 @@
     {
         OrderInfo = await m_Order.GetOrderInfoById(OrderId);
         DSRShopDueList = await m_DSRShopDue.GetAllDSRShopDue(OrderId);
-       // OrderDetails = await m_Order.GetOrderDetailsByOrderAsync(OrderId);
         DailyExpenseList = m_DailyExpense.GetAllDailyExpense(OrderId);
         OrderPaymentHistoryByOrderList = await m_OrderPaymentHistory.GetAllOrderPaymentHistoryByOrderId(OrderId);
 
@@ -132,189 +131,94 @@
         _navigationManager.NavigateTo($"/Sales");
     }
 
-    // public async Task ExportToPdf()
-    // {
-    //     if (!ValidationHelper.ValidateAndNotify(OrderDetails, notificationComponent))
-    //         return;
 
-    //     var document = Document.Create(container =>
-    //     {
-    //         container.Page(page =>
-    //         {
-    //             // Set margins
-    //             page.MarginTop(20);
-    //             page.MarginBottom(20);
-    //             page.MarginLeft(40);
-    //             page.MarginRight(40);
+    public async Task ExportToPdf()
+    {
+        var document = Document.Create(container =>
+        {
+            container.Page(page =>
+            {
+                // Margins
+                page.MarginTop(20);
+                page.MarginBottom(20);
+                page.MarginLeft(15);
+                page.MarginRight(15);
 
-    //             page.Size(PageSizes.A4);
-    //             page.DefaultTextStyle(style => style.FontSize(10));
+                page.Size(PageSizes.A4);
+                page.DefaultTextStyle(style => style.FontSize(10));
+                page.Header().Element(ComposeHeader);
 
-    //             page.Header().Element(ComposeHeader);
+                // Content
+                page.Content().PaddingVertical(10).Table(table =>
+                {
+                    table.ColumnsDefinition(columns =>
+                    {
+                        columns.RelativeColumn(3); // Label
+                        columns.RelativeColumn(2); // Value
+                    });
 
-    //             page.Content()
-    //                 .PaddingVertical(10)
-    //                 .Column(column =>
-    //                 {
-    //                     // First table - Order Details
-    //                     column.Item().Table(table =>
-    //                     {
-    //                         // Define columns for order details
-    //                         table.ColumnsDefinition(columns =>
-    //                         {
-    //                             columns.RelativeColumn(2.1f);  // Name
-    //                             columns.RelativeColumn(1.1f);     // Unit Price
-    //                             columns.RelativeColumn(.8f);     // Quantity
-    //                             columns.RelativeColumn(.8f);     // Return Quantity
-    //                             columns.RelativeColumn(.8f);  // Selling Quantity
-    //                             columns.RelativeColumn(1.8f);  // Total Product Price
-    //                             columns.RelativeColumn(1.6f);  // Return Price
-    //                             // columns.RelativeColumn(.8f);     // Discount %
-    //                             columns.RelativeColumn(1.8f);  // Total Price
-    //                         });
+                    var headerBackground = "#b0b0b0";
 
-    //                         // Header row
-    //                         table.Header(header =>
-    //                         {
-    //                             header.Cell().Background("#f5f5f5").Padding(5).Text("Name").Bold();
-    //                             header.Cell().Background("#f5f5f5").Padding(5).AlignRight().Text("U-Price").Bold();
-    //                             header.Cell().Background("#f5f5f5").Padding(5).AlignRight().Text("P-Qty").Bold();
-    //                             header.Cell().Background("#f5f5f5").Padding(5).AlignRight().Text("R-Qty").Bold();
-    //                             header.Cell().Background("#f5f5f5").Padding(5).AlignRight().Text("S-Qty").Bold();
-    //                             header.Cell().Background("#f5f5f5").Padding(5).AlignRight().Text("P-Price").Bold();
-    //                             header.Cell().Background("#f5f5f5").Padding(5).AlignRight().Text("R-Price").Bold();
-    //                             // header.Cell().Background("#f5f5f5").Padding(5).AlignRight().Text("Dis%").Bold();
-    //                             header.Cell().Background("#f5f5f5").Padding(5).AlignRight().Text("S-Price").Bold();
-    //                         });
+                    // --- Section Title ---
+                    table.Cell().ColumnSpan(2).Background(headerBackground)
+                        .Padding(5).Text("Order Summary").Bold();
 
-    //                         // Data rows
-    //                         foreach (var item in OrderDetails)
-    //                         {
-    //                             table.Cell().PaddingVertical(3).PaddingHorizontal(5).Text(item.ProductName);
-    //                             table.Cell().PaddingVertical(3).PaddingHorizontal(5).AlignRight().Text($"৳{item.ProductPrice:N2}");
-    //                             table.Cell().PaddingVertical(3).PaddingHorizontal(5).AlignRight().Text(item.Quantity.ToString());
-    //                             table.Cell().PaddingVertical(3).PaddingHorizontal(5).AlignRight().Text(item.ReturnQuantity.ToString());
-    //                             table.Cell().PaddingVertical(3).PaddingHorizontal(5).AlignRight().Text(item.SellingQuantity.ToString());
-    //                             table.Cell().PaddingVertical(3).PaddingHorizontal(5).AlignRight().Text($"৳{item.TotalProductPrice:N2}");
-    //                             table.Cell().PaddingVertical(3).PaddingHorizontal(5).AlignRight().Text($"৳{item.ReturnPrice:N2}");
-    //                             // table.Cell().PaddingVertical(3).PaddingHorizontal(5).AlignRight().Text(item.Discount.ToString());
-    //                             table.Cell().PaddingVertical(3).PaddingHorizontal(5).AlignRight().Text($"৳{item.TotalPrice:N2}");
-    //                         }
+                    // --- Total Cash Paid ---
+                    table.Cell().Padding(5).Text("Total Cash Paid:").Bold();
+                    table.Cell().AlignRight().Padding(5).Text($"৳{OrderPaymentHistoryByOrderList.Sum(x => x.AmountPaid):N2}");
 
-    //                         // Footer
-    //                         table.Cell().ColumnSpan(2).PaddingVertical(5).PaddingHorizontal(5).AlignRight().Text("Total:").Bold();
-    //                         table.Cell().PaddingVertical(5).PaddingHorizontal(5).AlignRight().Text($"{OrderDetails.Sum(x => x.Quantity)}").Bold();
-    //                         table.Cell().PaddingVertical(5).PaddingHorizontal(5).AlignRight().Text($"{OrderDetails.Sum(x => x.ReturnQuantity)}").Bold();
-    //                         table.Cell().PaddingVertical(5).PaddingHorizontal(5).AlignRight().Text($"{OrderDetails.Sum(x => x.SellingQuantity)}").Bold();
-    //                         table.Cell().PaddingVertical(5).PaddingHorizontal(5).AlignRight().Text($"৳{OrderDetails.Sum(x => x.TotalProductPrice):N2}").Bold();
-    //                         table.Cell().PaddingVertical(5).PaddingHorizontal(5).AlignRight().Text($"৳{OrderDetails.Sum(x => x.ReturnPrice):N2}").Bold();
-    //                         table.Cell().PaddingVertical(5).PaddingHorizontal(5).AlignRight().Text($"৳{OrderDetails.Sum(x => x.TotalPrice):N2}").Bold();
-    //                     });
+                    // --- Shop dues ---
+                    foreach (var shop in DSRShopDueList)
+                    {
+                        table.Cell().Padding(5).Text($"{shop.DueHistory}:");
+                        table.Cell().AlignRight().Padding(5).Text($"৳{shop.DueAmount:N2}");
+                    }
 
-    //                     // Space between tables
-    //                     column.Item().PaddingBottom(15);
+                    // --- Total Shop Amount ---
+                    table.Cell().Padding(5).Text("Total Shop Amount:").Bold();
+                    table.Cell().AlignRight().Padding(5).Text($"৳{DSRShopDueList.Sum(x => x.DueAmount):N2}");
 
-    //                     // Second table - Damage Products
-    //                     column.Item().Table(table =>
-    //                     {
-    //                         // Define columns for damage products
-    //                         table.ColumnsDefinition(columns =>
-    //                         {
-    //                             columns.RelativeColumn(3);  // Damage Product Name
-    //                             columns.RelativeColumn(1.5f); // Unit Price
-    //                             columns.RelativeColumn(1.5f); // Quantity
-    //                             columns.RelativeColumn(1.5f); // Total Price
-    //                         });
+                    // --- Expenses ---
+                    foreach (var expense in DailyExpenseList)
+                    {
+                        table.Cell().Padding(5).Text($"{expense.DailyExpenseType.Name} Amount:");
+                        table.Cell().AlignRight().Padding(5).Text($"৳{expense.Amount:N2}");
+                    }
 
-    //                         // Header row
-    //                         table.Header(header =>
-    //                         {
-    //                             header.Cell().Background("#f5f5f5").Padding(5).Text("Damage Product Name").Bold();
-    //                             header.Cell().Background("#f5f5f5").Padding(5).AlignRight().Text("Unit Price").Bold();
-    //                             header.Cell().Background("#f5f5f5").Padding(5).AlignRight().Text("Quantity").Bold();
-    //                             header.Cell().Background("#f5f5f5").Padding(5).AlignRight().Text("Total Price").Bold();
-    //                         });
+                    // --- Total Expense ---
+                    table.Cell().Padding(5).Text("Total Expense Amount:").Bold();
+                    table.Cell().AlignRight().Padding(5).Text($"৳{DailyExpenseList.Sum(x => x.Amount):N2}");
 
-    //                         // Damage Product Data rows
-    //                         foreach (var item in DamageProductDetails)
-    //                         {
-    //                             table.Cell().PaddingVertical(3).PaddingHorizontal(5).Text(item.ProductName);
-    //                             table.Cell().PaddingVertical(3).PaddingHorizontal(5).AlignRight().Text($"৳{item.ProductPrice:N2}");
-    //                             table.Cell().PaddingVertical(3).PaddingHorizontal(5).AlignRight().Text(item.Quantity.ToString());
-    //                             table.Cell().PaddingVertical(3).PaddingHorizontal(5).AlignRight().Text($"৳{item.TotalPrice:N2}");
-    //                         }
+                    // --- Grand Total ---
+                    table.Cell().Padding(5).Text("Grand Total Amount:").Bold();
+                    table.Cell().AlignRight().Padding(5).Text($"৳{GrandTotal:N2}");
 
-    //                         // Footer
-    //                         table.Cell().ColumnSpan(3).PaddingVertical(5).PaddingHorizontal(5).AlignRight().Text("Total Damage Price:").Bold();
-    //                         table.Cell().PaddingVertical(5).PaddingHorizontal(5).AlignRight().Text($"৳{DamageProductDetails.Sum(x => x.TotalPrice):N2}").Bold();
+                    // --- Due ---
+                    table.Cell().Padding(5).Text("Total Due:").Bold();
+                    table.Cell().AlignRight().Padding(5).Text($"৳{TotalDue:N2}");
+                });
 
-    //                         // Footer
-    //                         table.Cell().ColumnSpan(3).PaddingVertical(5).PaddingHorizontal(5).AlignRight().Text("Total Cash Paid:").Bold();
-    //                         table.Cell().PaddingVertical(5).PaddingHorizontal(5).AlignRight().Text($"৳{OrderPaymentHistoryByOrderList.Sum(x => x.AmountPaid):N2}").Bold();
+                // Footer
+                page.Footer().Row(row =>
+                {
+                    row.RelativeItem().AlignLeft().Text(DateTime.Now.ToString("dd/MM/yyyy HH:mm"));
+                    row.RelativeItem().AlignCenter().Text(text =>
+                    {
+                        text.CurrentPageNumber();
+                        text.Span(" / ");
+                        text.TotalPages();
+                    });
+                    row.RelativeItem();
+                });
+            });
+        });
 
-    //                         //SR Discount Data rows
-    //                         foreach (var item in SRDiscountList)
-    //                         {
-    //                             table.Cell().ColumnSpan(3).PaddingVertical(5).PaddingHorizontal(5).AlignRight().Text($"{item.Customer.Name} Discount:");
-    //                             table.Cell().PaddingVertical(5).PaddingHorizontal(5).AlignRight().Text($"৳{item.DiscountAmount:N2}");
-    //                         }
+        using var stream = new MemoryStream();
+        document.GeneratePdf(stream);
 
-    //                         // Footer
-    //                         table.Cell().ColumnSpan(3).PaddingVertical(5).PaddingHorizontal(5).AlignRight().Text("Total Discount Amount:").Bold();
-    //                         table.Cell().PaddingVertical(5).PaddingHorizontal(5).AlignRight().Text($"৳{SRDiscountList.Sum(x => x.DiscountAmount):N2}").Bold();
-
-    //                         //Shop Due Data rows
-    //                         foreach (var item in DSRShopDueList)
-    //                         {
-    //                             table.Cell().ColumnSpan(3).PaddingVertical(5).PaddingHorizontal(5).AlignRight().Text($"{item.DueHistory}");
-    //                             table.Cell().PaddingVertical(5).PaddingHorizontal(5).AlignRight().Text($"৳{item.DueAmount:N2}");
-    //                         }
-
-    //                         // Footer
-    //                         table.Cell().ColumnSpan(3).PaddingVertical(5).PaddingHorizontal(5).AlignRight().Text("Total Due Amount:").Bold();
-    //                         table.Cell().PaddingVertical(5).PaddingHorizontal(5).AlignRight().Text($"৳{DSRShopDueList.Sum(x => x.DueAmount):N2}").Bold();
-
-    //                         // Daily Expense Lis Data rows
-    //                         foreach (var item in DailyExpenseList)
-    //                         {
-    //                             table.Cell().ColumnSpan(3).PaddingVertical(5).PaddingHorizontal(5).AlignRight().Text($"{item.DailyExpenseType.Name} Amount:");
-    //                             table.Cell().PaddingVertical(5).PaddingHorizontal(5).AlignRight().Text($"৳{item.Amount:N2}");
-    //                         }
-
-    //                         // Footer
-    //                         table.Cell().ColumnSpan(3).PaddingVertical(5).PaddingHorizontal(5).AlignRight().Text("Total Expense Amount:").Bold();
-    //                         table.Cell().PaddingVertical(5).PaddingHorizontal(5).AlignRight().Text($"৳{DailyExpenseList.Sum(x => x.Amount):N2}").Bold();
-
-    //                     });
-
-    //                     // Total Due section
-    //                     column.Item().BorderTop(1).BorderColor(QuestPDF.Helpers.Colors.Black).PaddingTop(10)
-    //                         .AlignRight().Text($"Total Amount: ৳{OrderDetails.Sum(x => x.TotalPrice):N2}").FontSize(12).Bold();
-    //                     column.Item().PaddingTop(10).AlignRight().Text($"Total Paid: ৳{GrandTotal:N2}").FontSize(12).Bold();
-    //                     column.Item().PaddingTop(10).AlignRight().Text($"Total Due: ৳{TotalDue:N2}").FontSize(14).FontColor("#FF0000").Bold();
-    //                 });
-
-    //             page.Footer().Row(row =>
-    //                 {
-    //                     row.RelativeItem().AlignLeft().Text(DateTime.Now.ToString("dd/MM/yyyy HH:mm"));
-    //                     row.RelativeItem().AlignCenter().Text(text =>
-    //                     {
-    //                         text.CurrentPageNumber();
-    //                         text.Span(" / ");
-    //                         text.TotalPages();
-    //                     });
-    //                     row.RelativeItem(); // Empty space for right side (optional)
-    //                 });
-    //         });
-    //     });
-
-    //     using var stream = new MemoryStream();
-    //     document.GeneratePdf(stream);
-
-    //     var fileName = $"Order_Details_{OrderId}_{DateTime.Now:yyyyMMddHHmmss}.pdf";
-    //     await JSRuntime.InvokeVoidAsync("downloadFile", fileName, "application/pdf", stream.ToArray());
-    // }
-
+        var fileName = $"Order_{DateTime.Now:yyyyMMddHHmmss}.pdf";
+        await JSRuntime.InvokeVoidAsync("downloadFile", fileName, "application/pdf", stream.ToArray());
+    }
 
 
     void ComposeHeader(IContainer container)

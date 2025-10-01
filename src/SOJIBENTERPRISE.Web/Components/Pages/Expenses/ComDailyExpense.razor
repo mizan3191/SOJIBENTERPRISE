@@ -55,6 +55,7 @@ else
 
         <RadzenDataGrid Data="@FilterDailyExpenseList" TItem="DailyExpense" PageSize="10" AllowPaging="true" AllowSorting="true" AllowFiltering="false">
             <Columns>
+                <RadzenDataGridColumn TItem="DailyExpense" Property="@nameof(DailyExpense.DateFormate)" Title="Date Time" Width="150px" />
                 <RadzenDataGridColumn TItem="DailyExpense" Title="Expense Type" Width="200px">
                     <Template Context="item">
                         <div>@item.DailyExpenseType.Name</div>
@@ -73,7 +74,7 @@ else
                         <div>@item.Customer.Name</div>
                     </Template>
                 </RadzenDataGridColumn>
-                <RadzenDataGridColumn TItem="DailyExpense" Property="@nameof(DailyExpense.Date)" Title="Date Time" Width="150px" />
+                
                 <RadzenDataGridColumn TItem="DailyExpense" Title="Actions" Width="100px">
                     <Template Context="context">
                         <RadzenButton Icon="edit" ButtonStyle="ButtonStyle.Primary" Size="ButtonSize.Small"
@@ -355,7 +356,7 @@ else
                 (!string.IsNullOrEmpty(c.DailyExpenseType.Name) && c.DailyExpenseType.Name.Contains(search, StringComparison.OrdinalIgnoreCase)) ||
                 (!string.IsNullOrEmpty(c.Amount.ToString()) && c.Amount.ToString().Contains(search, StringComparison.OrdinalIgnoreCase)) ||
                 (!string.IsNullOrEmpty(c.Customer.Name) && c.Customer.Name.Contains(search, StringComparison.OrdinalIgnoreCase)) ||
-                (!string.IsNullOrEmpty(c.Date.ToString()) && c.Date.ToString().Contains(search, StringComparison.OrdinalIgnoreCase))
+                (!string.IsNullOrEmpty(c.DateFormate.ToString()) && c.DateFormate.ToString().Contains(search, StringComparison.OrdinalIgnoreCase))
             ).ToList();
         }
 
@@ -409,19 +410,21 @@ else
                         // Header
                         table.Header(header =>
                         {
+                            header.Cell().Background("#f5f5f5").Padding(5).Text("Date Time").Bold();
                             header.Cell().Background("#f5f5f5").Padding(5).Text("Expense Type").Bold();
                             header.Cell().Background("#f5f5f5").Padding(5).Text("Amount").Bold();
                             header.Cell().Background("#f5f5f5").Padding(5).Text("Issued By").Bold();
-                            header.Cell().Background("#f5f5f5").Padding(5).Text("Date Time").Bold();
+                            
                         });
 
                         // Data rows
                         foreach (var customer in FilterDailyExpenseList)
                         {
+                            table.Cell().PaddingVertical(5).PaddingHorizontal(5).Text(customer.DateFormate);
                             table.Cell().PaddingVertical(5).PaddingHorizontal(5).Text(customer.DailyExpenseType.Name);
-                            table.Cell().PaddingVertical(5).PaddingHorizontal(5).Text(customer.Amount);
+                            table.Cell().PaddingVertical(5).PaddingHorizontal(5).Text(customer.Amount.ToString());
                             table.Cell().PaddingVertical(5).PaddingHorizontal(5).Text(customer.Customer.Name);
-                            table.Cell().PaddingVertical(5).PaddingHorizontal(5).Text(customer.Date);
+                            
                         }
                     });
 

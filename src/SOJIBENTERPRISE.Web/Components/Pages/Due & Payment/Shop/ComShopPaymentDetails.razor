@@ -84,7 +84,7 @@ else
                         <div class="text-end fw-bold">৳@FilterShopDuePaymentSummaryList.Sum(o => o.ShopPaidAmount).ToString("N2")</div>
                     </FooterTemplate>
                 </RadzenDataGridColumn>
-                <RadzenDataGridColumn TItem="ShopDuePaymentSummary" Property="@nameof(ShopDuePaymentSummary.Date)" Title="Date Time" Width="150px">
+                <RadzenDataGridColumn TItem="ShopDuePaymentSummary" Property="@nameof(ShopDuePaymentSummary.DateFormated)" Title="Date Time" Width="150px">
                     <FooterTemplate>
                         <div class=" fw-bold">
                             ৳@((FilterShopDuePaymentSummaryList.Sum(o => o.ShopDueAmount) - FilterShopDuePaymentSummaryList.Sum(o => o.ShopPaidAmount)).ToString("N2"))
@@ -188,7 +188,7 @@ else
                 (c.Area != null && c.Area.Contains(search, StringComparison.OrdinalIgnoreCase)) ||
                 (c.ShopPaidAmount.ToString().Contains(search, StringComparison.OrdinalIgnoreCase)) ||
                 (c.ShopDueAmount.ToString().Contains(search, StringComparison.OrdinalIgnoreCase)) ||
-                (c.Date.ToString("yyyy-MM-dd").Contains(search, StringComparison.OrdinalIgnoreCase)) ||
+                (c.DateFormated.Contains(search, StringComparison.OrdinalIgnoreCase)) ||
                 (c.OwnerName != null && c.OwnerName.Contains(search, StringComparison.OrdinalIgnoreCase))
             ).ToList();
         }
@@ -246,7 +246,7 @@ else
                             header.Cell().Background("#f5f5f5").Padding(5).Text("Area").Bold();
                             header.Cell().Background("#f5f5f5").Padding(5).Text("Due Amount").Bold();
                             header.Cell().Background("#f5f5f5").Padding(5).Text("Paid Amount").Bold();
-                            header.Cell().Background("#f5f5f5").Padding(5).Text("Date").Bold();
+                            header.Cell().Background("#f5f5f5").Padding(5).Text("Date Time").Bold();
                         });
 
                         // Data rows
@@ -257,7 +257,7 @@ else
                             table.Cell().PaddingVertical(5).PaddingHorizontal(5).Text(customer.Area);
                             table.Cell().PaddingVertical(5).PaddingHorizontal(5).Text($"৳{customer.ShopDueAmount:N2}");
                             table.Cell().PaddingVertical(5).PaddingHorizontal(5).Text($"৳{customer.ShopPaidAmount:N2}");
-                            table.Cell().PaddingVertical(5).PaddingHorizontal(5).Text(customer.Date);
+                            table.Cell().PaddingVertical(5).PaddingHorizontal(5).Text(customer.DateFormated);
                             
                         }
 

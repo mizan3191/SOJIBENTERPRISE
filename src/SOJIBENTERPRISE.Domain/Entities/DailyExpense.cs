@@ -19,6 +19,7 @@ namespace SOJIBENTERPRISE.Domain
         public string Description { get; set; }
         public double Amount { get; set; }
         public DateTime Date { get; set; } = DateTime.UtcNow;
+        public string DateFormate => Date.ToString("dd-MMM-yyyy (ddd)");
         public bool IsDeleted { get; set; } = false;
     }
 }

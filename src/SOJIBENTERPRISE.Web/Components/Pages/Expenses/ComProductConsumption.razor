@@ -55,9 +55,16 @@ else
 
         <RadzenDataGrid Data="@FilterProductConsumptions" TItem="ProductConsumptionDTO" PageSize="10" AllowPaging="true" AllowSorting="true" AllowFiltering="false">
             <Columns>
+                <RadzenDataGridColumn TItem="ProductConsumptionDTO" Property="@nameof(ProductConsumptionDTO.DateFormate)" Title="Date Time " Width="100px" />
                 <RadzenDataGridColumn TItem="ProductConsumptionDTO" Property="@nameof(ProductConsumptionDTO.ReasonOfConsumed)" Title="Reason" Width="150px" />
-                <RadzenDataGridColumn TItem="ProductConsumptionDTO" Property="@nameof(ProductConsumptionDTO.Amount)" Title="Quantity " Width="100px" />
-                <RadzenDataGridColumn TItem="ProductConsumptionDTO" Property="@nameof(ProductConsumptionDTO.DateConsumed)" Title="Date Time " Width="100px" />
+                <RadzenDataGridColumn TItem="ProductConsumptionDTO" Title="Amount" Width="100px" TextAlign="TextAlign.Right">
+                    <Template Context="item">
+                        <div>৳@item.Amount.ToString("N2")</div>
+                    </Template>
+                    <FooterTemplate>
+                        <div class="text-end fw-bold">৳@FilterProductConsumptions.Sum(o => o.Amount).ToString("N2")</div>
+                    </FooterTemplate>
+                </RadzenDataGridColumn>
                 <RadzenDataGridColumn TItem="ProductConsumptionDTO" Property="@nameof(ProductConsumptionDTO.Comment)" Title="Comment" Width="200px" />
 @* 
                 <RadzenDataGridColumn TItem="ProductConsumptionDTO" Title="Actions" Width="80px">
@@ -313,7 +320,7 @@ else
             FilterProductConsumptions = ProductConsumptions.Where(c =>
                 (!string.IsNullOrEmpty(c.ReasonOfConsumed.ToString()) && c.ReasonOfConsumed.ToString().Contains(search, StringComparison.OrdinalIgnoreCase)) ||
                 (!string.IsNullOrEmpty(c.Amount.ToString()) && c.Amount.ToString().Contains(search, StringComparison.OrdinalIgnoreCase)) ||
-                (!string.IsNullOrEmpty(c.DateConsumed.ToString()) && c.DateConsumed.ToString().Contains(search, StringComparison.OrdinalIgnoreCase)) ||
+                (!string.IsNullOrEmpty(c.DateFormate.ToString()) && c.DateFormate.ToString().Contains(search, StringComparison.OrdinalIgnoreCase)) ||
                 (!string.IsNullOrEmpty(c.Comment.ToString()) && c.Comment.ToString().Contains(search, StringComparison.OrdinalIgnoreCase))
             ).ToList();
         }
@@ -362,27 +369,33 @@ else
                             columns.RelativeColumn(3);
                             columns.RelativeColumn(3);
                             columns.RelativeColumn(2);
-                            columns.RelativeColumn(2);
                             columns.RelativeColumn(3);
                         });
 
                         // Header
                         table.Header(header =>
                         {
+                            header.Cell().Background("#f5f5f5").Padding(5).Text("Date Time").Bold();
                             header.Cell().Background("#f5f5f5").Padding(5).Text("Reason").Bold();
                             header.Cell().Background("#f5f5f5").Padding(5).Text("Amount").Bold();
-                            header.Cell().Background("#f5f5f5").Padding(5).Text("Date Time").Bold();
                             header.Cell().Background("#f5f5f5").Padding(5).Text("Comment").Bold();
                         });
 
                         // Data rows
                         foreach (var customer in FilterProductConsumptions)
                         {
+                            table.Cell().PaddingVertical(5).PaddingHorizontal(5).Text(customer.DateFormate);
                             table.Cell().PaddingVertical(5).PaddingHorizontal(5).Text(customer.ReasonOfConsumed);
-                            table.Cell().PaddingVertical(5).PaddingHorizontal(5).Text(customer.Amount.ToString());
-                            table.Cell().PaddingVertical(5).PaddingHorizontal(5).Text(customer.DateConsumed.ToString());
+                            table.Cell().PaddingVertical(5).PaddingHorizontal(5).Text($"৳{customer.Amount:N2}");
                             table.Cell().PaddingVertical(5).PaddingHorizontal(5).Text(customer.Comment);
                         }
+
+
+                        // Total Row
+                        table.Cell().PaddingVertical(5).PaddingHorizontal(5).Text("").Bold();
+                        table.Cell().ColumnSpan(1).PaddingVertical(5).PaddingHorizontal(5).AlignRight().Text("Total").Bold();
+                        table.Cell().PaddingVertical(5).PaddingHorizontal(5).Text($"৳{FilterProductConsumptions.Sum(x => x.Amount):N2}").Bold();
+                        table.Cell().PaddingVertical(5).PaddingHorizontal(5).Text("").Bold();
                     });
 
                 page.Footer().Row(row =>

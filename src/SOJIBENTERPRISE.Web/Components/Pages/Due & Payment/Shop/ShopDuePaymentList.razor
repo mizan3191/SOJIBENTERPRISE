@@ -210,7 +210,7 @@ else
                 (c.ReferredBy != null && c.ReferredBy.Contains(search, StringComparison.OrdinalIgnoreCase)) ||
                 (c.ShopPaidAmount.ToString().Contains(search, StringComparison.OrdinalIgnoreCase)) ||
                 (c.ShopDueAmount.ToString().Contains(search, StringComparison.OrdinalIgnoreCase)) ||
-                (c.Date.ToString("yyyy-MM-dd").Contains(search, StringComparison.OrdinalIgnoreCase)) ||
+                (c.DateFormated.Contains(search, StringComparison.OrdinalIgnoreCase)) ||
                 (c.OwnerName != null && c.OwnerName.Contains(search, StringComparison.OrdinalIgnoreCase))
             ).ToList();
         }
@@ -286,7 +286,7 @@ else
                             table.Cell().PaddingVertical(5).PaddingHorizontal(5).Text(customer.ReferredBy);
                             table.Cell().PaddingVertical(5).PaddingHorizontal(5).Text($"৳{customer.ShopDueAmount:N2}");
                             table.Cell().PaddingVertical(5).PaddingHorizontal(5).Text($"৳{customer.ShopPaidAmount:N2}");
-                            table.Cell().PaddingVertical(5).PaddingHorizontal(5).Text(customer.Date);
+                            table.Cell().PaddingVertical(5).PaddingHorizontal(5).Text(customer.DateFormated);
 
                         }
 

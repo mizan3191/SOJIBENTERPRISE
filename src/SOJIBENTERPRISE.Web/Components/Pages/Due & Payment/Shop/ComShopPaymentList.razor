@@ -75,7 +75,7 @@
                     <div>@item.PaymentMethodFormatted</div>
                 </Template>
             </RadzenDataGridColumn>
-            <RadzenDataGridColumn TItem="DSRShopPaymentHistory" Property="@nameof(DSRShopPaymentHistory.PaymentDate)" Title="Date Time" Width="200px" />
+            <RadzenDataGridColumn TItem="DSRShopPaymentHistory" Property="@nameof(DSRShopPaymentHistory.DateFormated)" Title="Date Time" Width="200px" />
             <RadzenDataGridColumn TItem="DSRShopPaymentHistory" Title="Actions" Width="100px">
                 <Template Context="context">
                     <RadzenButton Icon="edit" ButtonStyle="ButtonStyle.Primary" Size="ButtonSize.Small"
@@ -347,7 +347,7 @@
             FilterDSRShopPaymentHistoryList = DSRShopPaymentHistoryList.Where(c =>
                 (!string.IsNullOrEmpty(c.Customer.Name) && c.Customer.Name.Contains(search, StringComparison.OrdinalIgnoreCase)) ||
                 (!string.IsNullOrEmpty(c.AmountPaid.ToString()) && c.AmountPaid.ToString().Contains(search, StringComparison.OrdinalIgnoreCase)) ||
-                (!string.IsNullOrEmpty(c.PaymentDate.ToString()) && c.PaymentDate.ToString().Contains(search, StringComparison.OrdinalIgnoreCase))
+                (!string.IsNullOrEmpty(c.DateFormated.ToString()) && c.DateFormated.ToString().Contains(search, StringComparison.OrdinalIgnoreCase))
             ).ToList();
         }
 
@@ -414,7 +414,7 @@
                             table.Cell().PaddingVertical(5).PaddingHorizontal(5).Text(customer.Shop.Name);
                             table.Cell().PaddingVertical(5).PaddingHorizontal(5).Text($"৳{customer.AmountPaid:N2}");
                             table.Cell().PaddingVertical(5).PaddingHorizontal(5).Text(customer.Customer.Name);
-                            table.Cell().PaddingVertical(5).PaddingHorizontal(5).Text(customer.PaymentDate);
+                            table.Cell().PaddingVertical(5).PaddingHorizontal(5).Text(customer.DateFormated);
                         }
 
                         // Total Row

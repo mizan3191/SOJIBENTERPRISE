@@ -19,7 +19,7 @@ else
 
         <RadzenDataGrid Data="@DailyExpenseList" TItem="DailyExpense" PageSize="10" AllowPaging="true" AllowSorting="true" AllowFiltering="false">
             <Columns>
-
+                <RadzenDataGridColumn TItem="DailyExpense" Property="@nameof(DailyExpense.DateFormate)" Title="Date Time" Width="150px" />
                 <RadzenDataGridColumn TItem="DailyExpense" Title="Expense Type" Width="150px">
                     <Template Context="item">
                         <div>@item.DailyExpenseType.Name</div>
@@ -38,7 +38,7 @@ else
                         <div class="text-end fw-bold">৳@DailyExpenseList.Sum(o => o.Amount).ToString("N2")</div>
                     </FooterTemplate>
                 </RadzenDataGridColumn>
-                <RadzenDataGridColumn TItem="DailyExpense" Property="@nameof(DailyExpense.Date)" Title="Date Time" Width="150px" />
+                
                 <RadzenDataGridColumn TItem="DailyExpense" Title="Actions" Width="100px">
                     <Template Context="product">
                         <RadzenButton Icon="edit" ButtonStyle="ButtonStyle.Primary" Size="ButtonSize.Small"

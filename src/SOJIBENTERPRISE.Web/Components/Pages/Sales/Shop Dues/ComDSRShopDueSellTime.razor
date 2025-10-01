@@ -42,6 +42,8 @@ else
         </div>
         <RadzenDataGrid Data="@FilterDSRShopDueList" TItem="DSRShopDueForOrderDTO" PageSize="10" AllowPaging="true" AllowSorting="true" AllowFiltering="false">
             <Columns>
+                <RadzenDataGridColumn TItem="DSRShopDueForOrderDTO" Property="@nameof(DSRShopDueForOrderDTO.DateFormate)" Title="Date Time" Width="150px" />
+
                 <RadzenDataGridColumn TItem="DSRShopDueForOrderDTO" Title="Shop Name" Width="200px">
                     <Template Context="item">
                         <div>@item.ShopName</div>
@@ -55,7 +57,6 @@ else
                         <div class="text-end fw-bold">৳@FilterDSRShopDueList.Sum(o => o.DueAmount).ToString("N2")</div>
                     </FooterTemplate>
                 </RadzenDataGridColumn>
-                <RadzenDataGridColumn TItem="DSRShopDueForOrderDTO" Property="@nameof(DSRShopDueForOrderDTO.Date)" Title="Date Time" Width="150px" />
                 <RadzenDataGridColumn TItem="DSRShopDueForOrderDTO" Title="Referred By" Width="150px">
                     <Template Context="item">
                         <div>@item.CustomerName</div>
@@ -323,8 +324,9 @@ else
         {
             FilterDSRShopDueList = DSRShopDueList.Where(c =>
                 (!string.IsNullOrEmpty(c.ShopName) && c.ShopName.Contains(search, StringComparison.OrdinalIgnoreCase)) ||
+                (!string.IsNullOrEmpty(c.InvoiceNumber) && c.InvoiceNumber.Contains(search, StringComparison.OrdinalIgnoreCase)) ||
                 (!string.IsNullOrEmpty(c.DueAmount.ToString()) && c.DueAmount.ToString().Contains(search, StringComparison.OrdinalIgnoreCase)) ||
-                (!string.IsNullOrEmpty(c.Date.ToString()) && c.Date.ToString().Contains(search, StringComparison.OrdinalIgnoreCase)) ||
+                (!string.IsNullOrEmpty(c.DateFormate) && c.DateFormate.Contains(search, StringComparison.OrdinalIgnoreCase)) ||
                 (!string.IsNullOrEmpty(c.CustomerName) && c.CustomerName.Contains(search, StringComparison.OrdinalIgnoreCase))
             ).ToList();
         }
@@ -359,34 +361,38 @@ else
                         table.ColumnsDefinition(columns =>
                         {
                             columns.RelativeColumn(3);
+                            columns.RelativeColumn(4);
                             columns.RelativeColumn(2);
-                            columns.RelativeColumn(2);
+                            columns.RelativeColumn(3);
                             columns.RelativeColumn(3);
                         });
 
                         // Header
                         table.Header(header =>
                         {
+                            header.Cell().Background("#f5f5f5").Padding(5).Text("Date Time").Bold();
                             header.Cell().Background("#f5f5f5").Padding(5).Text("Shop Name").Bold();
                             header.Cell().Background("#f5f5f5").Padding(5).Text("Amount").Bold();
                             header.Cell().Background("#f5f5f5").Padding(5).Text("Issued By").Bold();
-                            header.Cell().Background("#f5f5f5").Padding(5).Text("Date Time").Bold();
+                            header.Cell().Background("#f5f5f5").Padding(5).Text("Invoice Number").Bold();
+                           
                         });
 
                         // Data rows
                         foreach (var customer in FilterDSRShopDueList)
                         {
+                            table.Cell().PaddingVertical(5).PaddingHorizontal(5).Text(customer.DateFormate);
                             table.Cell().PaddingVertical(5).PaddingHorizontal(5).Text(customer.ShopName);
                             table.Cell().PaddingVertical(5).PaddingHorizontal(5).Text($"৳{customer.DueAmount:N2}");
                             table.Cell().PaddingVertical(5).PaddingHorizontal(5).Text(customer.CustomerName);
-                            table.Cell().PaddingVertical(5).PaddingHorizontal(5).Text(customer.Date);
+                            table.Cell().PaddingVertical(5).PaddingHorizontal(5).Text(customer.InvoiceNumber);
+                            
 
                         }
 
                         // Total Row
-                        table.Cell().ColumnSpan(1).PaddingVertical(5).PaddingHorizontal(5).AlignRight().Text("Total").Bold();
+                        table.Cell().ColumnSpan(2).PaddingVertical(5).PaddingHorizontal(5).AlignRight().Text("Total").Bold();
                         table.Cell().PaddingVertical(5).PaddingHorizontal(5).Text($"৳{FilterDSRShopDueList.Sum(x => x.DueAmount):N2}").Bold();
-                        table.Cell().PaddingVertical(5).PaddingHorizontal(5).Text("").Bold();
                         table.Cell().PaddingVertical(5).PaddingHorizontal(5).Text("").Bold();
                     });
 

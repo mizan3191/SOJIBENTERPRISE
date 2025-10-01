@@ -1,4 +1,6 @@
-﻿namespace SOJIBENTERPRISE.Domain
+﻿using static System.Runtime.InteropServices.JavaScript.JSType;
+
+namespace SOJIBENTERPRISE.Domain
 {
     public class CustomerPaymentHistoryDTO
     {
@@ -8,6 +10,7 @@
         public double TotalDueBeforePayment { get; set; }
         public double TotalDueAfterPayment { get; set; }
         public DateTime PaymentDate { get; set; }
+        public string DateFormated => PaymentDate.ToString("dd-MMM-yyyy (ddd)");
         public string PaymentMethod { get; set; }
         public string TransactionID { get; set; }
         public string Number { get; set; }
